@@ -23,9 +23,7 @@ Content-Language: en-US
   <h1>Simple HTML webpage</h1>
   <p>Hello, world!</p>
 </body>
-</html>
-
-)";
+</html>)";
 
 
 
