@@ -109,8 +109,8 @@ bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16Cl
 	}
 
 	socketClient = (SOCKET_T)socketNew;
-	u16ClientPort = sockClientInfo.sin_port;
-	u32ClientAddr = sockClientInfo.sin_addr.s_addr;
+	u16ClientPort = ntohs(sockClientInfo.sin_port);
+	u32ClientAddr = ntohl(sockClientInfo.sin_addr.s_addr);
 
 	return true;
 }
@@ -128,7 +128,7 @@ bool SendData(SOCKET_T socketSend, const void *pDataBuffer, int32_t &i32BufferSi
 	return true;
 }
 
-bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32BufferSize, int32_t &i32ErrorCode)
+bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32BufferSize, bool &bClientClose, int32_t &i32ErrorCode)
 {
 	while (true)
 	{
@@ -138,12 +138,16 @@ bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32Buffer
 			i32ErrorCode = WSAGetLastError();
 			return false;
 		}
-		else if (i32BufferSize > 0)
+		else if (iSendSize == 0)
 		{
-			pDataBuffer = (const void *)((const char *)pDataBuffer + iSendSize);
-			i32BufferSize -= iSendSize;
+			bClientClose = true;
+			break;
 		}
-		else//i32BufferSize <= 0
+
+		pDataBuffer = (const void *)((const char *)pDataBuffer + iSendSize);
+		i32BufferSize -= iSendSize;
+
+		if (i32BufferSize <= 0)
 		{
 			break;
 		}
@@ -165,7 +169,7 @@ bool RecvData(SOCKET_T socketRecv, void *pDataBuffer, int32_t &i32BufferSize, in
 	return true;
 }
 
-bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, int32_t &i32ErrorCode)
+bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, bool &bClientClose, int32_t &i32ErrorCode)
 {
 	while (true)
 	{
@@ -175,12 +179,16 @@ bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, 
 			i32ErrorCode = WSAGetLastError();
 			return false;
 		}
-		else if (i32BufferSize > 0)
+		else if (iRecvSize == 0)
 		{
-			pDataBuffer = (void *)((char *)pDataBuffer + iRecvSize);
-			i32BufferSize -= iRecvSize;
+			bClientClose = true;
+			break;
 		}
-		else//i32BufferSize <= 0
+
+		pDataBuffer = (void *)((char *)pDataBuffer + iRecvSize);
+		i32BufferSize -= iRecvSize;
+
+		if (i32BufferSize <= 0)
 		{
 			break;
 		}
