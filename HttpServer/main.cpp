@@ -46,6 +46,12 @@ int main(void)
 				break;
 			}
 
+			if (i32BufferSize == 0)
+			{
+				printf("Client Disconnect!\n");
+				break;
+			}
+
 			printf("Recv Data: [\n");
 			MyAssert(fwrite(charArrRecvData, sizeof(charArrRecvData[0]), i32BufferSize, stdout) == i32BufferSize);
 			printf("] Recv End\n");
