@@ -13,7 +13,7 @@ int main(void)
 
 	MyAssert(OpenSocket(sock, i32Errcode), "OpenSocket ErrCode: %d", i32Errcode);
 
-	MyAssert(BindSocket(sock,0,0, i32Errcode), "BindSocket ErrCode: %d", i32Errcode);
+	MyAssert(BindSocket(sock, 80, 0, i32Errcode), "BindSocket ErrCode: %d", i32Errcode);
 	MyAssert(ListenSocket(sock, 2, i32Errcode), "BindSocket ErrCode: %d", i32Errcode);
 
 	while (true)
