@@ -4,6 +4,31 @@
 #include <stdio.h>
 #include <string>
 
+
+constexpr const char rsp[] =
+R"(
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: 183
+Connection: keep-alive
+Content-Language: en-US
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A simple webpage</title>
+</head>
+<body>
+  <h1>Simple HTML webpage</h1>
+  <p>Hello, world!</p>
+</body>
+</html>
+
+)";
+
+
+
 int main(void)
 {
 	MyAssert(Startup(), "Startup Error");
@@ -54,7 +79,16 @@ int main(void)
 
 			printf("Recv Data: [\n");
 			MyAssert(fwrite(charArrRecvData, sizeof(charArrRecvData[0]), i32BufferSize, stdout) == i32BufferSize);
-			printf("] Recv End\n");
+			printf("] Recv End\n\n");
+
+			i32BufferSize = sizeof(rsp) - 1;
+			b = SendData(sockclient, rsp, i32BufferSize, i32Errcode);
+			if (!b)
+			{
+				printf("Send Error: %d\n", i32Errcode);
+				MyAssert(CloseSocket(sockclient, i32Errcode), "CloseSocket ErrCode: %d", i32Errcode);
+				break;
+			}
 		}
 	}
 
