@@ -29,5 +29,11 @@
     <ClInclude Include="Windows_Socket.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="HttpServer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MyAssert.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
