@@ -33,10 +33,25 @@ private:
 
 	//全局单次初始化保证，线程安全保证，程序生命周期结束析构保证
 	static inline const SockInit sockInit{};
+
+public:
+	enum class State : int32_t
+	{
+		CREATED,        // Socket已创建
+		CONNECTED,      // 连接已建立
+		DATA_EXCHANGE,  // 数据交换中
+		PEER_CLOSING,   // 对方正在关闭
+		PEER_CLOSED,    // 对方已关闭
+		LOCAL_CLOSING,  // 本地正在关闭
+		CLOSED,         // 连接已关闭
+		ERROR           // 错误状态
+	};
+
 private:
 	SOCKET_T socketData;
 	int32_t i32ErrCode;
-
+	State state;//TODO
+	
 protected:
 	Socket(SOCKET_T _socketData, int32_t _i32ErrCode = 0) :socketData(_socketData), i32ErrCode(_i32ErrCode)
 	{}
