@@ -24,7 +24,3 @@ bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32Buffer
 bool RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode);
 bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, bool &bClientClose, int32_t &i32ErrorCode);
 
-
-
-
-
