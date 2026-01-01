@@ -65,6 +65,30 @@ bool CloseSocket(SOCKET_T &socketClose, int32_t &i32ErrorCode)
 	return true;
 }
 
+bool ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32ServerAddr, int32_t &i32ErrorCode)
+{
+	const SOCKADDR_IN sockServerInfo
+	{
+		.sin_family = AF_INET,				//IPV4 - TCP/UDP
+		.sin_port = htons(u16ServerPort),	//port（网络字节序）
+		.sin_addr =
+		{
+			.S_un =
+			{
+				.S_addr = htonl(u32ServerAddr)//ip（网络字节序）
+			}
+		},
+	};
+
+	if (connect((SOCKET)socketConnect, (const sockaddr *)&sockServerInfo, sizeof(sockServerInfo)) != 0)
+	{
+		i32ErrorCode = WSAGetLastError();
+		return false;
+	}
+
+	return true;
+}
+
 bool BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerAddr, int32_t &i32ErrorCode)
 {
 	const SOCKADDR_IN sockServerInfo
@@ -202,3 +226,13 @@ bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, 
 	return true;
 }
 
+bool ShutdownSocket(SOCKET_T socketShutdown, ShutdownType enShutdownType, int32_t &i32ErrorCode)
+{
+	if (shutdown((SOCKET)socketShutdown, (int)enShutdownType) != 0)
+	{
+		i32ErrorCode = WSAGetLastError();
+		return false;
+	}
+
+	return true;
+}

@@ -121,6 +121,11 @@ public:
 		return i32ErrCode;
 	}
 
+	bool Connect(uint16_t u16ServerPort, uint32_t u32ServerAddr) noexcept
+	{
+		return ConnectSocket(socketData, u16ServerPort, u32ServerAddr, i32ErrCode);
+	}
+
 	bool Bind(uint16_t u16ServerPort, uint32_t u32ServerAddr) noexcept
 	{
 		return BindSocket(socketData, u16ServerPort, u32ServerAddr, i32ErrCode);
@@ -136,7 +141,10 @@ public:
 		return AcceptSocket(socketData, socketClient.socketData, u16ClientPort, u32ClientAddr, i32ErrCode);
 	}
 
-
+	bool Shutdown(ShutdownType enShutdownType) noexcept
+	{
+		return ShutdownSocket(socketData, enShutdownType, i32ErrCode);
+	}
 
 
 
