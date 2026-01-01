@@ -5,6 +5,11 @@
 
 #pragma comment(lib ,"ws2_32.lib")
 
+SOCKET_T GetUnInitSocket(void)
+{
+	return (SOCKET_T)INVALID_SOCKET;
+}
+
 bool Startup(void)
 {
 	WSADATA wsaData{};
@@ -115,7 +120,7 @@ bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16Cl
 	return true;
 }
 
-bool SendData(SOCKET_T socketSend, const void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode)
+bool SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode)
 {
 	int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, i32BufferSize, 0);
 	if (iSendSize < 0)
@@ -156,7 +161,7 @@ bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32Buffer
 	return true;
 }
 
-bool RecvData(SOCKET_T socketRecv, void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode)
+bool RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode)
 {
 	int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, i32BufferSize, 0);
 	if (iRecvSize < 0)

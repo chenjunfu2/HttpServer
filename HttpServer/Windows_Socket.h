@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 using SOCKET_T = void *;
+SOCKET_T GetUnInitSocket(void);
 
 bool Startup(void);
 bool Cleanup(void);
@@ -13,8 +14,8 @@ bool BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerA
 bool ListenSocket(SOCKET_T socketListen, int32_t i32MaxPendingConnections, int32_t &i32ErrorCode);
 bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr, int32_t &i32ErrorCode);
 
-bool SendData(SOCKET_T socketSend, const void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode);
-bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32BufferSize, int32_t &i32ErrorCode);
+bool SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode);
+bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32BufferSize, bool &bClientClose, int32_t &i32ErrorCode);
 
-bool RecvData(SOCKET_T socketRecv, void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode);
-bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, int32_t &i32ErrorCode);
+bool RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode);
+bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, bool &bClientClose, int32_t &i32ErrorCode);

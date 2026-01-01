@@ -1,13 +1,14 @@
 ﻿#include "Windows_Socket.h"
 #include "MyAssert.hpp"
 
+#include "Socket.hpp"
+
 #include <stdio.h>
 #include <string>
 
 
 constexpr const char rsp[] =
-R"(
-HTTP/1.1 200 OK
+R"(HTTP/1.1 200 OK
 Content-Type: text/html; charset=utf-8
 Content-Length: 183
 Connection: keep-alive
@@ -24,8 +25,6 @@ Content-Language: en-US
   <p>Hello, world!</p>
 </body>
 </html>)";
-
-
 
 int main(void)
 {
@@ -61,7 +60,7 @@ int main(void)
 		while (true)
 		{
 			int32_t i32BufferSize = RECV_SIZE;
-			bool b = RecvData(sockclient, charArrRecvData, i32BufferSize, i32Errcode);
+			bool b = RecvDataPartial(sockclient, charArrRecvData, i32BufferSize, i32Errcode);
 			if (!b)
 			{
 				printf("Recv Error: %d\n", i32Errcode);
@@ -80,7 +79,7 @@ int main(void)
 			printf("] Recv End\n\n");
 
 			i32BufferSize = sizeof(rsp) - 1;
-			b = SendData(sockclient, rsp, i32BufferSize, i32Errcode);
+			b = SendDataAll(sockclient, rsp, i32BufferSize, i32Errcode);
 			if (!b)
 			{
 				printf("Send Error: %d\n", i32Errcode);
