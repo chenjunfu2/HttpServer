@@ -144,6 +144,17 @@ bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16Cl
 	return true;
 }
 
+bool ShutdownSocket(SOCKET_T socketShutdown, ShutdownType enShutdownType, int32_t &i32ErrorCode)
+{
+	if (shutdown((SOCKET)socketShutdown, (int)enShutdownType) != 0)
+	{
+		i32ErrorCode = WSAGetLastError();
+		return false;
+	}
+
+	return true;
+}
+
 bool SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode)
 {
 	int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, i32BufferSize, 0);
@@ -226,13 +237,6 @@ bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, 
 	return true;
 }
 
-bool ShutdownSocket(SOCKET_T socketShutdown, ShutdownType enShutdownType, int32_t &i32ErrorCode)
-{
-	if (shutdown((SOCKET)socketShutdown, (int)enShutdownType) != 0)
-	{
-		i32ErrorCode = WSAGetLastError();
-		return false;
-	}
 
-	return true;
-}
+
+
