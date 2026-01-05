@@ -29,15 +29,15 @@ ErrMessage::ErrMessage(uint32_t u32ErrCode) noexcept :
 	);
 
 	//如果函数失败，则返回值为零，设置大小为错误码，并设置消息为NULL以便识别特殊问题
-	if (dRet == 0)
-	{
-		pMsg = NULL;
-		szLength = (size_t)GetLastError();
-	}
-	else
+	if (dRet != 0)
 	{
 		pMsg = (const char *)pRet;
 		szLength = (size_t)dRet;
+	}
+	else
+	{
+		pMsg = NULL;
+		szLength = (size_t)GetLastError();
 	}
 }
 
