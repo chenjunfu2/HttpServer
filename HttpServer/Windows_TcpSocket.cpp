@@ -10,53 +10,73 @@ SOCKET_T GetUnInitSocket(void)
 	return (SOCKET_T)INVALID_SOCKET;
 }
 
-SocketError MapSocketError(int32_t i32ErrorCode)
+SocketError::SocketErrCode SocketError::MapSocketError(uint32_t u32ErrorCode)
 {
-	switch (i32ErrorCode)
+	switch (u32ErrorCode)
 	{
-	case NO_ERROR:				return SocketError::NO_ERR;
+	case NO_ERROR:				return SocketErrCode::NO_ERR;
 
-	case WSANOTINITIALISED:		return SocketError::NOT_INITIALIZED;
-	case WSAENOTSOCK:			return SocketError::NOT_SOCKET;
-	case WSAEINPROGRESS:		return SocketError::IN_PROGRESS;
+	case WSANOTINITIALISED:		return SocketErrCode::NOT_INITIALIZED;
+	case WSAENOTSOCK:			return SocketErrCode::NOT_SOCKET;
+	case WSAEINPROGRESS:		return SocketErrCode::IN_PROGRESS;
 
-	case WSA_INVALID_HANDLE:	return SocketError::INVALID_HANDLE;
-	case WSA_INVALID_PARAMETER:	return SocketError::INVALID_PARAMETER;
+	case WSA_INVALID_HANDLE:	return SocketErrCode::INVALID_HANDLE;
+	case WSA_INVALID_PARAMETER:	return SocketErrCode::INVALID_PARAMETER;
 
-	case WSA_NOT_ENOUGH_MEMORY:	return SocketError::NO_MEMORY;
-	case WSAENOBUFS:			return SocketError::NO_BUFFER;
+	case WSA_NOT_ENOUGH_MEMORY:	return SocketErrCode::NO_MEMORY;
+	case WSAENOBUFS:			return SocketErrCode::NO_BUFFER;
 
-	case WSAEMFILE:				return SocketError::SOCKET_LIMIT;
-	case WSAEMSGSIZE:			return SocketError::MESSAGE_TOOLONG;
+	case WSAEMFILE:				return SocketErrCode::SOCKET_LIMIT;
+	case WSAEMSGSIZE:			return SocketErrCode::MESSAGE_TOOLONG;
 
-	case WSAEACCES:				return SocketError::ACCESS_DENIED;
-	case WSAEINTR:				return SocketError::CALL_INTERRUPTED;
-	case WSAEOPNOTSUPP:			return SocketError::OP_NOSUPPORTED;
+	case WSAEACCES:				return SocketErrCode::ACCESS_DENIED;
+	case WSAEINTR:				return SocketErrCode::CALL_INTERRUPTED;
+	case WSAEOPNOTSUPP:			return SocketErrCode::OP_NOSUPPORTED;
 
-	case WSAEFAULT:				return SocketError::ADDR_FAULT;
-	case WSAEINVAL:				return SocketError::PARAM_FAULT;
+	case WSAEFAULT:				return SocketErrCode::ADDR_FAULT;
+	case WSAEINVAL:				return SocketErrCode::PARAM_FAULT;
 
-	case WSAEADDRINUSE:			return SocketError::ADDR_INUSE;
-	case WSAEADDRNOTAVAIL:		return SocketError::ADDR_NOTAVAIL;
+	case WSAEADDRINUSE:			return SocketErrCode::ADDR_INUSE;
+	case WSAEADDRNOTAVAIL:		return SocketErrCode::ADDR_NOTAVAIL;
 
-	case WSAEISCONN:			return SocketError::IS_CONNECTED;
-	case WSAENOTCONN:			return SocketError::NO_CONNECTED;
+	case WSAEISCONN:			return SocketErrCode::IS_CONNECTED;
+	case WSAENOTCONN:			return SocketErrCode::NO_CONNECTED;
 
-	case WSAENETDOWN:			return SocketError::NET_DOWN;
-	case WSAENETUNREACH:		return SocketError::NET_UNREACH;
-	case WSAENETRESET:			return SocketError::NET_RESET;
+	case WSAENETDOWN:			return SocketErrCode::NET_DOWN;
+	case WSAENETUNREACH:		return SocketErrCode::NET_UNREACH;
+	case WSAENETRESET:			return SocketErrCode::NET_RESET;
 
-	case WSAESHUTDOWN:			return SocketError::CONNECT_SHUTDOWN;
-	case WSAECONNABORTED:		return SocketError::CONNECT_ABORTED;
-	case WSAECONNRESET:			return SocketError::CONNECT_RESET;
-	case WSAETIMEDOUT:			return SocketError::CONNECT_TIMEDOUT;
-	case WSAECONNREFUSED:		return SocketError::CONNECT_REFUSED;
+	case WSAESHUTDOWN:			return SocketErrCode::CONNECT_SHUTDOWN;
+	case WSAECONNABORTED:		return SocketErrCode::CONNECT_ABORTED;
+	case WSAECONNRESET:			return SocketErrCode::CONNECT_RESET;
+	case WSAETIMEDOUT:			return SocketErrCode::CONNECT_TIMEDOUT;
+	case WSAECONNREFUSED:		return SocketErrCode::CONNECT_REFUSED;
 
-	case WSAEHOSTDOWN:			return SocketError::HOST_DOWN;
-	case WSAEHOSTUNREACH:		return SocketError::HOST_UNREACH;
+	case WSAEHOSTDOWN:			return SocketErrCode::HOST_DOWN;
+	case WSAEHOSTUNREACH:		return SocketErrCode::HOST_UNREACH;
 
-	default:					return SocketError::OTHER_ERR;
+	default:					return SocketErrCode::OTHER_ERR;
 	}
+}
+
+ErrMessage::~ErrMessage(void) noexcept
+{
+	if (pMsg != NULL)
+	{
+		LocalFree((HLOCAL)pMsg);
+	}
+
+	pMsg = NULL;
+	szLength = 0;
+}
+
+ErrMessage GetErrorMessage(uint32_t u32ErrCode)
+{
+	void *pMsg = NULL;
+	DWORD dRet = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, NULL, LANG_USER_DEFAULT, (LPSTR)&pMsg, 0, NULL);
+	
+	//如果函数失败，则返回值为零，设置大小为错误码，并设置消息为NULL以便识别特殊问题
+	return dRet == 0 ? ErrMessage(NULL, (size_t)GetLastError()) : ErrMessage((const char *)pMsg, (size_t)dRet);	
 }
 
 bool Startup(void)
@@ -82,7 +102,7 @@ bool Cleanup(void)
 	return WSACleanup() == 0;
 }
 
-bool OpenSocket(SOCKET_T &socketOpen, int32_t &i32ErrorCode)
+bool OpenSocket(SOCKET_T &socketOpen, uint32_t &u32ErrorCode)
 {
 	SOCKET socketNew = socket
 	(
@@ -93,7 +113,7 @@ bool OpenSocket(SOCKET_T &socketOpen, int32_t &i32ErrorCode)
 
 	if (socketNew == INVALID_SOCKET)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
@@ -102,11 +122,11 @@ bool OpenSocket(SOCKET_T &socketOpen, int32_t &i32ErrorCode)
 	return true;
 }
 
-bool CloseSocket(SOCKET_T &socketClose, int32_t &i32ErrorCode)
+bool CloseSocket(SOCKET_T &socketClose, uint32_t &u32ErrorCode)
 {
 	if (closesocket((SOCKET)socketClose) != 0)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
@@ -114,7 +134,7 @@ bool CloseSocket(SOCKET_T &socketClose, int32_t &i32ErrorCode)
 	return true;
 }
 
-bool ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32ServerAddr, int32_t &i32ErrorCode)
+bool ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32ServerAddr, uint32_t &u32ErrorCode)
 {
 	const SOCKADDR_IN sockServerInfo
 	{
@@ -131,14 +151,14 @@ bool ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32S
 
 	if (connect((SOCKET)socketConnect, (const sockaddr *)&sockServerInfo, sizeof(sockServerInfo)) != 0)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
 	return true;
 }
 
-bool BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerAddr, int32_t &i32ErrorCode)
+bool BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerAddr, uint32_t &u32ErrorCode)
 {
 	const SOCKADDR_IN sockServerInfo
 	{
@@ -155,25 +175,25 @@ bool BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerA
 
 	if (bind((SOCKET)socketBind, (const sockaddr *)&sockServerInfo, sizeof(sockServerInfo)) != 0)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
 	return true;
 }
 
-bool ListenSocket(SOCKET_T socketListen, int32_t i32MaxPendingConnections, int32_t &i32ErrorCode)
+bool ListenSocket(SOCKET_T socketListen, uint32_t u32MaxPendingConnections, uint32_t &u32ErrorCode)
 {
-	if (listen((SOCKET)socketListen, i32MaxPendingConnections) != 0)
+	if (listen((SOCKET)socketListen, u32MaxPendingConnections) != 0)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
 	return true;
 }
 
-bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr, int32_t &i32ErrorCode)
+bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr, uint32_t &u32ErrorCode)
 {
 	SOCKADDR_IN sockClientInfo{};
 
@@ -182,7 +202,7 @@ bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16Cl
 
 	if (socketNew == INVALID_SOCKET)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
@@ -193,38 +213,38 @@ bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16Cl
 	return true;
 }
 
-bool ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown, int32_t &i32ErrorCode)
+bool ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown, uint32_t &u32ErrorCode)
 {
 	if (shutdown((SOCKET)socketShutdown, (int)enSocketShutdown) != 0)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
 	return true;
 }
 
-bool SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode)
+bool SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize, uint32_t &u32ErrorCode)
 {
-	int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, i32BufferSize, 0);
+	int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, u32BufferSize, 0);
 	if (iSendSize < 0)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
-	i32BufferSize = iSendSize;
+	u32BufferSize = iSendSize;
 	return true;
 }
 
-bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32BufferSize, bool &bClientClose, int32_t &i32ErrorCode)
+bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClose, uint32_t &u32ErrorCode)
 {
 	while (true)
 	{
-		int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, i32BufferSize, 0);
+		int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, u32BufferSize, 0);
 		if (iSendSize < 0)
 		{
-			i32ErrorCode = WSAGetLastError();
+			u32ErrorCode = WSAGetLastError();
 			return false;
 		}
 		else if (iSendSize == 0)
@@ -234,9 +254,9 @@ bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32Buffer
 		}
 
 		pDataBuffer = (const void *)((const char *)pDataBuffer + iSendSize);
-		i32BufferSize -= iSendSize;
+		u32BufferSize -= iSendSize;
 
-		if (i32BufferSize <= 0)
+		if (u32BufferSize <= 0)
 		{
 			break;
 		}
@@ -245,27 +265,27 @@ bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, int32_t i32Buffer
 	return true;
 }
 
-bool RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, int32_t &i32BufferSize, int32_t &i32ErrorCode)
+bool RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize, uint32_t &u32ErrorCode)
 {
-	int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, i32BufferSize, 0);
+	int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, u32BufferSize, 0);
 	if (iRecvSize < 0)
 	{
-		i32ErrorCode = WSAGetLastError();
+		u32ErrorCode = WSAGetLastError();
 		return false;
 	}
 
-	i32BufferSize = iRecvSize;
+	u32BufferSize = iRecvSize;
 	return true;
 }
 
-bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, bool &bClientClose, int32_t &i32ErrorCode)
+bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClose, uint32_t &u32ErrorCode)
 {
 	while (true)
 	{
-		int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, i32BufferSize, 0);
+		int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, u32BufferSize, 0);
 		if (iRecvSize < 0)
 		{
-			i32ErrorCode = WSAGetLastError();
+			u32ErrorCode = WSAGetLastError();
 			return false;
 		}
 		else if (iRecvSize == 0)
@@ -275,9 +295,9 @@ bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, int32_t i32BufferSize, 
 		}
 
 		pDataBuffer = (void *)((char *)pDataBuffer + iRecvSize);
-		i32BufferSize -= iRecvSize;
+		u32BufferSize -= iRecvSize;
 
-		if (i32BufferSize <= 0)
+		if (u32BufferSize <= 0)
 		{
 			break;
 		}

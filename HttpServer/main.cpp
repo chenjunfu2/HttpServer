@@ -33,12 +33,14 @@ int main(void)
 	MyAssert(Startup(), "Startup Error");
 
 	SOCKET_T sock{};
-	int32_t i32Errcode{};
+	uint32_t u32Errcode{};
 
-	MyAssert(OpenSocket(sock, i32Errcode), "OpenSocket ErrCode: %d", i32Errcode);
+	MyAssert(OpenSocket(sock, u32Errcode), "OpenSocket ErrCode: %d", u32Errcode);
 
-	MyAssert(BindSocket(sock, BIND_PORT, 0, i32Errcode), "BindSocket ErrCode: %d", i32Errcode);
-	MyAssert(ListenSocket(sock, 2, i32Errcode), "ListenSocket ErrCode: %d", i32Errcode);
+	MyAssert(BindSocket(sock, BIND_PORT, 0, u32Errcode), "BindSocket ErrCode: %d", u32Errcode);
+	MyAssert(ListenSocket(sock, 2, u32Errcode), "ListenSocket ErrCode: %d", u32Errcode);
+
+	auto ret = GetErrorMessage(10054L);
 
 	while (true)
 	{
@@ -47,7 +49,7 @@ int main(void)
 		SOCKET_T sockclient{};
 		uint16_t u16ClientPort{};
 		uint32_t u32ClientAddr{};
-		MyAssert(AcceptSocket(sock, sockclient, u16ClientPort, u32ClientAddr, i32Errcode), "AcceptSocket ErrCode: %d", i32Errcode);
+		MyAssert(AcceptSocket(sock, sockclient, u16ClientPort, u32ClientAddr, u32Errcode), "AcceptSocket ErrCode: %d", u32Errcode);
 
 		printf("Client Connection: [%d.%d.%d.%d:%d]\n", 
 			(uint8_t)((u32ClientAddr >> 3 * 8) & 0xFF),
@@ -61,45 +63,45 @@ int main(void)
 		char charArrRecvData[RECV_SIZE];
 		while (true)
 		{
-			int32_t i32BufferSize = RECV_SIZE;
-			bool b = RecvDataPartial(sockclient, charArrRecvData, i32BufferSize, i32Errcode);
+			uint32_t u32BufferSize = RECV_SIZE;
+			bool b = RecvDataPartial(sockclient, charArrRecvData, u32BufferSize, u32Errcode);
 			if (!b)
 			{
-				printf("Recv Error: %d\n", i32Errcode);
-				MyAssert(CloseSocket(sockclient, i32Errcode), "CloseSocket ErrCode: %d", i32Errcode);
+				printf("Recv Error: %d\n", u32Errcode);
+				MyAssert(CloseSocket(sockclient, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
 				break;
 			}
 
-			if (i32BufferSize == 0)
+			if (u32BufferSize == 0)
 			{
 				printf("Client Disconnect!\n");
 				break;
 			}
 
 			printf("Recv Data: [\n");
-			MyAssert(fwrite(charArrRecvData, sizeof(charArrRecvData[0]), i32BufferSize, stdout) == i32BufferSize);
-			printf("] Recv End\n\n");
+			MyAssert(fwrite(charArrRecvData, sizeof(charArrRecvData[0]), u32BufferSize, stdout) == u32BufferSize);
+			printf("\n] Recv End\n\n");
 
-			i32BufferSize = sizeof(rsp) - 1;
+			u32BufferSize = sizeof(rsp) - 1;
 			bool bClientClose = false;
-			b = SendDataAll(sockclient, rsp, i32BufferSize, bClientClose, i32Errcode);
+			b = SendDataAll(sockclient, rsp, u32BufferSize, bClientClose, u32Errcode);
 			if (!b)
 			{
-				printf("Send Error: %d\n", i32Errcode);
-				MyAssert(CloseSocket(sockclient, i32Errcode), "CloseSocket ErrCode: %d", i32Errcode);
+				printf("Send Error: %d\n", u32Errcode);
+				MyAssert(CloseSocket(sockclient, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
 				break;
 			}
 
 			if (bClientClose)
 			{
 				printf("Connect Closed\n");
-				MyAssert(CloseSocket(sockclient, i32Errcode), "CloseSocket ErrCode: %d", i32Errcode);
+				MyAssert(CloseSocket(sockclient, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
 				break;
 			}
 		}
 	}
 
-	MyAssert(CloseSocket(sock, i32Errcode), "CloseSocket ErrCode: %d", i32Errcode);
+	MyAssert(CloseSocket(sock, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
 	MyAssert(Cleanup(), "Cleanup Error");
 	return 0;
 }
