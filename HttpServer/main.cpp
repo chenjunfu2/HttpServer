@@ -26,6 +26,8 @@ Content-Language: en-US
 </body>
 </html>)";
 
+#define BIND_PORT 25565
+
 int main(void)
 {
 	MyAssert(Startup(), "Startup Error");
@@ -35,19 +37,19 @@ int main(void)
 
 	MyAssert(OpenSocket(sock, i32Errcode), "OpenSocket ErrCode: %d", i32Errcode);
 
-	MyAssert(BindSocket(sock, 25565, 0, i32Errcode), "BindSocket ErrCode: %d", i32Errcode);
+	MyAssert(BindSocket(sock, BIND_PORT, 0, i32Errcode), "BindSocket ErrCode: %d", i32Errcode);
 	MyAssert(ListenSocket(sock, 2, i32Errcode), "ListenSocket ErrCode: %d", i32Errcode);
 
 	while (true)
 	{
-		printf("Listening...\n");
+		printf("Listening [0.0.0.0:%d]...\n", BIND_PORT);
 
 		SOCKET_T sockclient{};
 		uint16_t u16ClientPort{};
 		uint32_t u32ClientAddr{};
 		MyAssert(AcceptSocket(sock, sockclient, u16ClientPort, u32ClientAddr, i32Errcode), "AcceptSocket ErrCode: %d", i32Errcode);
 
-		printf("Client Connection: [%d.%d.%d.%d]:[%d]\n", 
+		printf("Client Connection: [%d.%d.%d.%d:%d]\n", 
 			(uint8_t)((u32ClientAddr >> 3 * 8) & 0xFF),
 			(uint8_t)((u32ClientAddr >> 2 * 8) & 0xFF),
 			(uint8_t)((u32ClientAddr >> 1 * 8) & 0xFF),

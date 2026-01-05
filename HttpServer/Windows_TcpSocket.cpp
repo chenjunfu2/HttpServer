@@ -193,9 +193,9 @@ bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16Cl
 	return true;
 }
 
-bool ShutdownSocket(SOCKET_T socketShutdown, ShutdownType enShutdownType, int32_t &i32ErrorCode)
+bool ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown, int32_t &i32ErrorCode)
 {
-	if (shutdown((SOCKET)socketShutdown, (int)enShutdownType) != 0)
+	if (shutdown((SOCKET)socketShutdown, (int)enSocketShutdown) != 0)
 	{
 		i32ErrorCode = WSAGetLastError();
 		return false;
