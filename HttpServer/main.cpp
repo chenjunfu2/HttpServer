@@ -40,7 +40,7 @@ do\
 
 int main(void)
 {
-	MyAssert(Startup(), "Startup Error");
+	CALL_FUNC_ASSERT(Startup);
 
 	SOCKET_T sock{};
 
@@ -50,7 +50,7 @@ int main(void)
 
 	while (true)
 	{
-		printf("Listening [0.0.0.0:%d]...\n", BIND_PORT);
+		printf("Listening [0.0.0.0:%d] ...\n", BIND_PORT);
 
 		SOCKET_T sockclient{};
 		uint16_t u16ClientPort{};
