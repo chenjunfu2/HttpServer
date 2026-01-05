@@ -7,10 +7,57 @@
 using SOCKET_T = void *;
 SOCKET_T GetUnInitSocket(void);
 
+class ErrMessage
+{
+private:
+	const char *pMsg;
+	size_t szLength;
+
+public:
+	DELETE_COPY(ErrMessage);
+
+	//因为实现需要win api，放在cpp内
+	ErrMessage(uint32_t u32ErrCode) noexcept;
+	~ErrMessage(void) noexcept;
+
+	ErrMessage(ErrMessage &&_Move) noexcept :
+		pMsg(_Move.pMsg),
+		szLength(_Move.szLength)
+	{
+		_Move.pMsg = NULL;
+		_Move.szLength = 0;
+	}
+	ErrMessage &operator=(ErrMessage &&_Move) noexcept
+	{
+		pMsg = _Move.pMsg;
+		szLength = _Move.szLength;
+
+		_Move.pMsg = NULL;
+		_Move.szLength = 0;
+	}
+
+	std::string_view GetMsg(void) const noexcept
+	{
+		return pMsg != NULL
+			? std::string_view(pMsg, szLength)	//指针非空返回实际说明	
+			: std::string_view("", 0);			//指针为空返回空字符串
+	}
+
+	bool IsGetMessageError(void) const noexcept
+	{
+		return pMsg == NULL && szLength != 0;
+	}
+
+	uint32_t GetMessageErrorError(void) const noexcept
+	{
+		return (uint32_t)szLength;
+	}
+};
+
 class SocketError
 {
 public:
-	enum class SocketErrCode :uint8_t
+	enum ErrorCode :uint8_t
 	{
 		NO_ERR = 0,		//无错误
 
@@ -57,104 +104,64 @@ public:
 		ENUM_END,			//enum结束标记
 	};
 
-	static SocketErrCode MapSocketError(uint32_t u32ErrCode);
-
 private:
-	uint32_t u32ErrorCode;
+	uint32_t u32WinErrorCode = 0;//默认值0，无错误
+
+protected:
+	static ErrorCode MapSocketError(uint32_t u32ErrCode);
 
 public:
+	DEFAULT_CSTC(SocketError);
 	DEFAULT_CPMV(SocketError);
 	DEFAULT_DSTC(SocketError);
 
-	GETSET(ErrorCode, u32ErrorCode);
+	//阻止隐式转换构造
+	explicit SocketError(uint32_t _u32WinErrorCode) :
+		u32WinErrorCode(_u32WinErrorCode)
+	{}
 
-	operator bool(void)//返回是否有错误，有错误为true，否则false
+	GETTER_COPY(WinErrorCode, u32WinErrorCode);
+	SETTER_CPMV(WinErrorCode, u32WinErrorCode);
+
+	operator bool(void) const noexcept//返回是否有错误，有错误为true，否则false
 	{
 		return IsError();
 	}
 
-	bool IsError(void)
+	bool IsError(void) const noexcept
 	{
-		return u32ErrorCode != 0;//不为0则出错，返回true，否则false
+		return u32WinErrorCode != 0;//不为0则出错，返回true，否则false
+	}
+
+	ErrorCode ToErrorCode(void) const noexcept
+	{
+		return MapSocketError(u32WinErrorCode);
+	}
+
+	ErrMessage ToErrMessage(void) const noexcept
+	{
+		return ErrMessage(u32WinErrorCode);
 	}
 };
 
 
-class ErrMessage
-{
-private:
-	const char *pMsg;
-	size_t szLength;
+SocketError Startup(void);
+SocketError Cleanup(void);
 
-private:
-	//仅允许友元构造
-	friend ErrMessage GetErrorMessage(uint32_t u32ErrCode);
+SocketError OpenSocket(SOCKET_T &socketOpen);
+SocketError CloseSocket(SOCKET_T &socketClose);
 
-	ErrMessage(const char *_pMsg, size_t _szLength) :
-		pMsg(_pMsg),
-		szLength(_szLength)
-	{}
-public:
-	DELETE_COPY(ErrMessage);
-
-	ErrMessage(void) :
-		pMsg(NULL),
-		szLength(0)
-	{}
-
-	ErrMessage(ErrMessage &&_Move) noexcept:
-		pMsg(_Move.pMsg),
-		szLength(_Move.szLength)
-	{
-		_Move.pMsg = NULL;
-		_Move.szLength = 0;
-	}
-	ErrMessage &operator=(ErrMessage &&_Move) noexcept
-	{
-		pMsg = _Move.pMsg;
-		szLength = _Move.szLength;
-
-		_Move.pMsg = NULL;
-		_Move.szLength = 0;
-	}
-
-	~ErrMessage(void) noexcept;//因为实现需要win api，放在cpp内
-
-	std::string_view GetMsg(void) const noexcept
-	{
-		return std::string_view(pMsg, szLength);
-	}
-
-	bool IsGetMessageError(void) const noexcept
-	{
-		return pMsg == NULL && szLength != 0;
-	}
-
-	uint32_t GetMessageErrorError(void) const noexcept
-	{
-		return (uint32_t)szLength;
-	}
-};
-
-ErrMessage GetErrorMessage(uint32_t u32ErrCode);
-
-bool Startup(void);
-bool Cleanup(void);
-
-bool OpenSocket(SOCKET_T &socketOpen, uint32_t &u32ErrorCode);
-bool CloseSocket(SOCKET_T &socketClose, uint32_t &u32ErrorCode);
-
-bool ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32ServerAddr, uint32_t &u32ErrorCode);
-bool BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerAddr, uint32_t &u32ErrorCode);
-bool ListenSocket(SOCKET_T socketListen, uint32_t u32MaxPendingConnections, uint32_t &u32ErrorCode);
-bool AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr, uint32_t &u32ErrorCode);
+SocketError ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32ServerAddr);
+SocketError BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerAddr);
+SocketError ListenSocket(SOCKET_T socketListen, uint32_t u32MaxPendingConnections);
+SocketError AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr);
 
 enum class SocketShutdown : int { RECEIVE = 0, SEND = 1, BOTH = 2 };
-bool ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown, uint32_t &u32ErrorCode);
+SocketError ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown);
 
-bool SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize, uint32_t &u32ErrorCode);
-bool SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClose, uint32_t &u32ErrorCode);
+SocketError SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize);
+SocketError SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
 
-bool RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize, uint32_t &u32ErrorCode);
-bool RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClose, uint32_t &u32ErrorCode);
+SocketError RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize);
+SocketError RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
 

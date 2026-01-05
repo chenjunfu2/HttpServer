@@ -33,9 +33,10 @@ int main(void)
 	MyAssert(Startup(), "Startup Error");
 
 	SOCKET_T sock{};
-	uint32_t u32Errcode{};
+	SocketError e{};
 
-	MyAssert(OpenSocket(sock, u32Errcode), "OpenSocket ErrCode: %d", u32Errcode);
+
+	MyAssert(e = OpenSocket(sock), "OpenSocket Error: %s", e.ToErrMessage().GetMsg());
 
 	MyAssert(BindSocket(sock, BIND_PORT, 0, u32Errcode), "BindSocket ErrCode: %d", u32Errcode);
 	MyAssert(ListenSocket(sock, 2, u32Errcode), "ListenSocket ErrCode: %d", u32Errcode);
