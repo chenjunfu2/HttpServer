@@ -1,7 +1,7 @@
 ﻿#include "Windows_TcpSocket.h"
 #include "MyAssert.hpp"
 
-//#include "TcpSocket.hpp"
+#include "TcpSocket.hpp"
 
 #include <stdio.h>
 #include <string>
@@ -34,7 +34,7 @@ do\
 	SocketError e = func_name(__VA_ARGS__);\
 	if (e.IsError())\
 	{\
-		MyAssert(false, "[" #func_name "] Error [%d]: %s", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());\
+		MyAssert(false, "[" #func_name "] Error [%d]: %s", e.GetSysErrorCode(), e.ToErrMessage().GetStrView().data());\
 	}\
 } while (0)
 
@@ -72,10 +72,10 @@ int main(void)
 			SocketError e{};
 
 			uint32_t u32BufferSize = RECV_SIZE;
-			e = RecvDataPartial(sockclient, charArrRecvData, u32BufferSize);
+			e = SocketRecvPartial(sockclient, charArrRecvData, u32BufferSize);
 			if (e)
 			{
-				printf("[RecvDataPartial] Error [%d]: %s\n", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());
+				printf("[RecvDataPartial] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrMessage().GetStrView().data());
 				CALL_FUNC_ASSERT(CloseSocket, sockclient);
 				break;
 			}
@@ -92,10 +92,10 @@ int main(void)
 
 			u32BufferSize = sizeof(rsp) - 1;
 			bool bClientClose = false;
-			e = SendDataAll(sockclient, rsp, u32BufferSize, bClientClose);
+			e = SocketSendAll(sockclient, rsp, u32BufferSize, bClientClose);
 			if (e)
 			{
-				printf("[SendDataAll] Error [%d]: %s\n", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());
+				printf("[SendDataAll] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrMessage().GetStrView().data());
 				CALL_FUNC_ASSERT(CloseSocket, sockclient);
 				break;
 			}

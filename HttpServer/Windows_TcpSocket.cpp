@@ -241,10 +241,10 @@ SocketError ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutd
 	return {};
 }
 
-SocketError SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize)
+SocketError SocketSendPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize)
 {
 	int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, u32BufferSize, 0);
-	if (iSendSize < 0)
+	if (iSendSize == SOCKET_ERROR)
 	{
 		return SocketError(WSAGetLastError());
 	}
@@ -253,12 +253,12 @@ SocketError SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32
 	return {};
 }
 
-SocketError SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed)
+SocketError SocketSendAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed)
 {
 	while (true)
 	{
 		int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, u32BufferSize, 0);
-		if (iSendSize < 0)
+		if (iSendSize == SOCKET_ERROR)
 		{
 			return SocketError(WSAGetLastError());
 		}
@@ -280,10 +280,10 @@ SocketError SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u
 	return {};
 }
 
-SocketError RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize)
+SocketError SocketRecvPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize)
 {
 	int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, u32BufferSize, 0);
-	if (iRecvSize < 0)
+	if (iRecvSize == SOCKET_ERROR)
 	{
 		return SocketError(WSAGetLastError());
 	}
@@ -292,12 +292,12 @@ SocketError RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u3
 	return {};
 }
 
-SocketError RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed)
+SocketError SocketRecvAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed)
 {
 	while (true)
 	{
 		int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, u32BufferSize, 0);
-		if (iRecvSize < 0)
+		if (iRecvSize == SOCKET_ERROR)
 		{
 			return SocketError(WSAGetLastError());
 		}

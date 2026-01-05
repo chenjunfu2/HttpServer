@@ -1,4 +1,6 @@
-﻿#include <stdint.h>
+﻿#pragma once
+
+#include <stdint.h>
 #include <stddef.h>
 #include <string>
 
@@ -36,7 +38,7 @@ public:
 		_Move.szLength = 0;
 	}
 
-	std::string_view MsgStr(void) const noexcept
+	std::string_view GetStrView(void) const noexcept
 	{
 		return pMsg != NULL
 			? std::string_view(pMsg, szLength)	//指针非空返回实际说明	
@@ -105,7 +107,7 @@ public:
 	};
 
 private:
-	uint32_t u32WinErrorCode = 0;//默认值0，无错误
+	uint32_t u32SysErrorCode = 0;//默认值0，无错误
 
 protected:
 	static ErrorCode MapSocketError(uint32_t u32ErrCode);
@@ -116,31 +118,31 @@ public:
 	DEFAULT_DSTC(SocketError);
 
 	//阻止隐式转换构造
-	explicit SocketError(uint32_t _u32WinErrorCode) :
-		u32WinErrorCode(_u32WinErrorCode)
+	explicit SocketError(uint32_t _u32SysErrorCode) :
+		u32SysErrorCode(_u32SysErrorCode)
 	{}
 
-	GETTER_COPY(WinErrorCode, u32WinErrorCode);
-	SETTER_CPMV(WinErrorCode, u32WinErrorCode);
+	GETTER_COPY(SysErrorCode, u32SysErrorCode);
+	SETTER_CPMV(SysErrorCode, u32SysErrorCode);
 
-	operator bool(void) const noexcept//返回是否有错误，有错误为true，否则false
+	explicit operator bool(void) const noexcept//返回是否有错误，有错误为true，否则false
 	{
 		return IsError();
 	}
 
 	bool IsError(void) const noexcept
 	{
-		return u32WinErrorCode != 0;//不为0则出错，返回true，否则false
+		return u32SysErrorCode != 0;//不为0则出错，返回true，否则false
 	}
 
 	ErrorCode ToErrorCode(void) const noexcept
 	{
-		return MapSocketError(u32WinErrorCode);
+		return MapSocketError(u32SysErrorCode);
 	}
 
 	ErrMessage ToErrMessage(void) const noexcept
 	{
-		return ErrMessage(u32WinErrorCode);
+		return ErrMessage(u32SysErrorCode);
 	}
 };
 
@@ -159,9 +161,9 @@ SocketError AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t
 enum class SocketShutdown : int { RECEIVE = 0, SEND = 1, BOTH = 2 };
 SocketError ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown);
 
-SocketError SendDataPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize);
-SocketError SendDataAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
+SocketError SocketSendPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize);
+SocketError SocketSendAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
 
-SocketError RecvDataPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize);
-SocketError RecvDataAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
+SocketError SocketRecvPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize);
+SocketError SocketRecvAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
 
