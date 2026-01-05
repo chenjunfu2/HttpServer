@@ -36,7 +36,7 @@ public:
 		_Move.szLength = 0;
 	}
 
-	std::string_view GetMsg(void) const noexcept
+	std::string_view MsgStr(void) const noexcept
 	{
 		return pMsg != NULL
 			? std::string_view(pMsg, szLength)	//指针非空返回实际说明	

@@ -28,20 +28,25 @@ Content-Language: en-US
 
 #define BIND_PORT 25565
 
+#define CALL_FUNC_ASSERT(func_name,...)\
+do\
+{\
+	SocketError e = func_name(__VA_ARGS__);\
+	if (e.IsError())\
+	{\
+		MyAssert(false, "[" #func_name "] Error [%d]: %s", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());\
+	}\
+} while (0)
+
 int main(void)
 {
 	MyAssert(Startup(), "Startup Error");
 
 	SOCKET_T sock{};
-	SocketError e{};
 
-
-	MyAssert(e = OpenSocket(sock), "OpenSocket Error: %s", e.ToErrMessage().GetMsg());
-
-	MyAssert(BindSocket(sock, BIND_PORT, 0, u32Errcode), "BindSocket ErrCode: %d", u32Errcode);
-	MyAssert(ListenSocket(sock, 2, u32Errcode), "ListenSocket ErrCode: %d", u32Errcode);
-
-	auto ret = GetErrorMessage(10054L);
+	CALL_FUNC_ASSERT(OpenSocket, sock);
+	CALL_FUNC_ASSERT(BindSocket, sock, BIND_PORT, 0);
+	CALL_FUNC_ASSERT(ListenSocket, sock, 2);
 
 	while (true)
 	{
@@ -50,7 +55,7 @@ int main(void)
 		SOCKET_T sockclient{};
 		uint16_t u16ClientPort{};
 		uint32_t u32ClientAddr{};
-		MyAssert(AcceptSocket(sock, sockclient, u16ClientPort, u32ClientAddr, u32Errcode), "AcceptSocket ErrCode: %d", u32Errcode);
+		CALL_FUNC_ASSERT(AcceptSocket, sock, sockclient, u16ClientPort, u32ClientAddr);
 
 		printf("Client Connection: [%d.%d.%d.%d:%d]\n", 
 			(uint8_t)((u32ClientAddr >> 3 * 8) & 0xFF),
@@ -64,12 +69,14 @@ int main(void)
 		char charArrRecvData[RECV_SIZE];
 		while (true)
 		{
+			SocketError e{};
+
 			uint32_t u32BufferSize = RECV_SIZE;
-			bool b = RecvDataPartial(sockclient, charArrRecvData, u32BufferSize, u32Errcode);
-			if (!b)
+			e = RecvDataPartial(sockclient, charArrRecvData, u32BufferSize);
+			if (!e)
 			{
-				printf("Recv Error: %d\n", u32Errcode);
-				MyAssert(CloseSocket(sockclient, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
+				printf("[RecvDataPartial] Error [%d]: %s\n", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());
+				CALL_FUNC_ASSERT(CloseSocket, sockclient);
 				break;
 			}
 
@@ -85,24 +92,24 @@ int main(void)
 
 			u32BufferSize = sizeof(rsp) - 1;
 			bool bClientClose = false;
-			b = SendDataAll(sockclient, rsp, u32BufferSize, bClientClose, u32Errcode);
-			if (!b)
+			e = SendDataAll(sockclient, rsp, u32BufferSize, bClientClose);
+			if (!e)
 			{
-				printf("Send Error: %d\n", u32Errcode);
-				MyAssert(CloseSocket(sockclient, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
+				printf("[SendDataAll] Error [%d]: %s\n", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());
+				CALL_FUNC_ASSERT(CloseSocket, sockclient);
 				break;
 			}
 
 			if (bClientClose)
 			{
 				printf("Connect Closed\n");
-				MyAssert(CloseSocket(sockclient, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
+				CALL_FUNC_ASSERT(CloseSocket, sockclient);
 				break;
 			}
 		}
 	}
 
-	MyAssert(CloseSocket(sock, u32Errcode), "CloseSocket ErrCode: %d", u32Errcode);
-	MyAssert(Cleanup(), "Cleanup Error");
+	CALL_FUNC_ASSERT(CloseSocket,sock);
+	CALL_FUNC_ASSERT(Cleanup);
 	return 0;
 }
