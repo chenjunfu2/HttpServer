@@ -1,14 +1,14 @@
 ﻿#pragma once
 
 #if defined(_WIN32)
-#include "Windows_Socket.h"
+#include "Windows_TcpSocket.h"
 #elif defined(__linux__)
 //TODO
 #endif
 
 #include "CPP_Helper.h"
 
-class Socket
+class TcpSocket
 {
 private:
 	class SockInit
@@ -35,53 +35,53 @@ private:
 	static inline const SockInit sockInit{};
 
 public:
-	enum class State : int32_t
-	{
-		CREATED,        // Socket已创建
-		CONNECTED,      // 连接已建立
-		DATA_EXCHANGE,  // 数据交换中
-		PEER_CLOSING,   // 对方正在关闭
-		PEER_CLOSED,    // 对方已关闭
-		LOCAL_CLOSING,  // 本地正在关闭
-		CLOSED,         // 连接已关闭
-		ERROR           // 错误状态
-	};
+
 
 private:
 	SOCKET_T socketData;
-	int32_t i32ErrCode;
-	State state;//TODO
+	SocketError socketError;
 	
 protected:
-	Socket(SOCKET_T _socketData, int32_t _i32ErrCode = 0) :socketData(_socketData), i32ErrCode(_i32ErrCode)
-	{}
-public:
-	Socket(void) noexcept : socketData(GetUnInitSocket()), i32ErrCode(0)
+	TcpSocket(SOCKET_T _socketData, Error _stateSocket, int32_t _i32ErrCode = 0) :
+		socketData(_socketData),
+		stateSocket(_stateSocket),
+		i32ErrCode(_i32ErrCode)
 	{}
 
-	~Socket(void) noexcept
+public:
+	TcpSocket(void) noexcept :
+		socketData(GetUnInitSocket()),
+		stateSocket(State::UNINIT),
+		i32ErrCode(0)
+	{}
+
+	~TcpSocket(void) noexcept
 	{
 		Close();
 	}
 
-	Socket(Socket &&_Move) noexcept :
+	TcpSocket(TcpSocket &&_Move) noexcept :
 		socketData(_Move.socketData),
+		stateSocket(_Move.stateSocket),
 		i32ErrCode(_Move.i32ErrCode)
 	{
 		_Move.socketData = GetUnInitSocket();
+		_Move.stateSocket = State::UNINIT;
 		_Move.i32ErrCode = 0;
 	}
 
-	Socket &operator=(Socket &&_Move) noexcept
+	TcpSocket &operator=(TcpSocket &&_Move) noexcept
 	{
 		socketData = _Move.socketData;
+		stateSocket = _Move.stateSocket;
 		i32ErrCode = _Move.i32ErrCode;
 
 		_Move.socketData = GetUnInitSocket();
+		_Move.stateSocket = State::UNINIT;
 		_Move.i32ErrCode = 0;
 	}
 
-	DELETE_COPY(Socket);
+	DELETE_COPY(TcpSocket);
 
 	bool Open(void) noexcept
 	{
@@ -136,7 +136,7 @@ public:
 		return ListenSocket(socketData, i32MaxPendingConnections, i32ErrCode);
 	}
 
-	bool Accept(Socket &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr) noexcept
+	bool Accept(TcpSocket &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr) noexcept
 	{
 		return AcceptSocket(socketData, socketClient.socketData, u16ClientPort, u32ClientAddr, i32ErrCode);
 	}

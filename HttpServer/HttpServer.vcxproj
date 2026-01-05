@@ -154,14 +154,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Windows_Socket.cpp" />
+    <ClCompile Include="Windows_TcpSocket.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPP_Helper.h" />
     <ClInclude Include="HttpServer.hpp" />
     <ClInclude Include="MyAssert.hpp" />
-    <ClInclude Include="Socket.hpp" />
-    <ClInclude Include="Windows_Socket.h" />
+    <ClInclude Include="TcpSocket.hpp" />
+    <ClInclude Include="Windows_TcpSocket.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

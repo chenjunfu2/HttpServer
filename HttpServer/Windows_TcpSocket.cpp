@@ -1,4 +1,4 @@
-﻿#include "Windows_Socket.h"
+﻿#include "Windows_TcpSocket.h"
 
 #include <WinSock2.h>
 #include <Windows.h>
@@ -8,6 +8,55 @@
 SOCKET_T GetUnInitSocket(void)
 {
 	return (SOCKET_T)INVALID_SOCKET;
+}
+
+SocketError MapSocketError(int32_t i32ErrorCode)
+{
+	switch (i32ErrorCode)
+	{
+	case NO_ERROR:				return SocketError::NO_ERR;
+
+	case WSANOTINITIALISED:		return SocketError::NOT_INITIALIZED;
+	case WSAENOTSOCK:			return SocketError::NOT_SOCKET;
+	case WSAEINPROGRESS:		return SocketError::IN_PROGRESS;
+
+	case WSA_INVALID_HANDLE:	return SocketError::INVALID_HANDLE;
+	case WSA_INVALID_PARAMETER:	return SocketError::INVALID_PARAMETER;
+
+	case WSA_NOT_ENOUGH_MEMORY:	return SocketError::NO_MEMORY;
+	case WSAENOBUFS:			return SocketError::NO_BUFFER;
+
+	case WSAEMFILE:				return SocketError::SOCKET_LIMIT;
+	case WSAEMSGSIZE:			return SocketError::MESSAGE_TOOLONG;
+
+	case WSAEACCES:				return SocketError::ACCESS_DENIED;
+	case WSAEINTR:				return SocketError::CALL_INTERRUPTED;
+	case WSAEOPNOTSUPP:			return SocketError::OP_NOSUPPORTED;
+
+	case WSAEFAULT:				return SocketError::ADDR_FAULT;
+	case WSAEINVAL:				return SocketError::PARAM_FAULT;
+
+	case WSAEADDRINUSE:			return SocketError::ADDR_INUSE;
+	case WSAEADDRNOTAVAIL:		return SocketError::ADDR_NOTAVAIL;
+
+	case WSAEISCONN:			return SocketError::IS_CONNECTED;
+	case WSAENOTCONN:			return SocketError::NO_CONNECTED;
+
+	case WSAENETDOWN:			return SocketError::NET_DOWN;
+	case WSAENETUNREACH:		return SocketError::NET_UNREACH;
+	case WSAENETRESET:			return SocketError::NET_RESET;
+
+	case WSAESHUTDOWN:			return SocketError::CONNECT_SHUTDOWN;
+	case WSAECONNABORTED:		return SocketError::CONNECT_ABORTED;
+	case WSAECONNRESET:			return SocketError::CONNECT_RESET;
+	case WSAETIMEDOUT:			return SocketError::CONNECT_TIMEDOUT;
+	case WSAECONNREFUSED:		return SocketError::CONNECT_REFUSED;
+
+	case WSAEHOSTDOWN:			return SocketError::HOST_DOWN;
+	case WSAEHOSTUNREACH:		return SocketError::HOST_UNREACH;
+
+	default:					return SocketError::OTHER_ERR;
+	}
 }
 
 bool Startup(void)

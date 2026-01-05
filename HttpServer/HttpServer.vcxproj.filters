@@ -18,15 +18,15 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Windows_Socket.cpp">
+    <ClCompile Include="Windows_TcpSocket.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Socket.hpp">
+    <ClInclude Include="TcpSocket.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Windows_Socket.h">
+    <ClInclude Include="Windows_TcpSocket.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="HttpServer.hpp">
