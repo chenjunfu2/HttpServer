@@ -73,7 +73,7 @@ int main(void)
 
 			uint32_t u32BufferSize = RECV_SIZE;
 			e = RecvDataPartial(sockclient, charArrRecvData, u32BufferSize);
-			if (!e)
+			if (e)
 			{
 				printf("[RecvDataPartial] Error [%d]: %s\n", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());
 				CALL_FUNC_ASSERT(CloseSocket, sockclient);
@@ -93,7 +93,7 @@ int main(void)
 			u32BufferSize = sizeof(rsp) - 1;
 			bool bClientClose = false;
 			e = SendDataAll(sockclient, rsp, u32BufferSize, bClientClose);
-			if (!e)
+			if (e)
 			{
 				printf("[SendDataAll] Error [%d]: %s\n", e.GetWinErrorCode(), e.ToErrMessage().MsgStr().data());
 				CALL_FUNC_ASSERT(CloseSocket, sockclient);
