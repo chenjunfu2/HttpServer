@@ -29,13 +29,20 @@ public:
 		_Move.pMsg = NULL;
 		_Move.szLength = 0;
 	}
+
+	void Clear(void) noexcept;
+
 	ErrMessage &operator=(ErrMessage &&_Move) noexcept
 	{
+		Clear();
+
 		pMsg = _Move.pMsg;
 		szLength = _Move.szLength;
 
 		_Move.pMsg = NULL;
 		_Move.szLength = 0;
+
+		return *this;
 	}
 
 	std::string_view GetStrView(void) const noexcept

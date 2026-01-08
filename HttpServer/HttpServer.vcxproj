@@ -161,7 +161,11 @@
     <ClInclude Include="HttpServer.hpp" />
     <ClInclude Include="MyAssert.hpp" />
     <ClInclude Include="TcpSocket.hpp" />
+    <ClInclude Include="VirtualFileSystem.hpp" />
     <ClInclude Include="Windows_TcpSocket.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Request.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -43,6 +43,11 @@ ErrMessage::ErrMessage(uint32_t u32ErrCode) noexcept :
 
 ErrMessage::~ErrMessage(void) noexcept
 {
+	Clear();
+}
+
+void ErrMessage::Clear(void) noexcept
+{
 	if (pMsg != NULL)
 	{
 		LocalFree((HLOCAL)pMsg);
