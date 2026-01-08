@@ -15,6 +15,9 @@ private:
 	const char *pMsg;
 	size_t szLength;
 
+private:
+	void Clear(void) noexcept;
+
 public:
 	DELETE_COPY(ErrMessage);
 
@@ -30,7 +33,7 @@ public:
 		_Move.szLength = 0;
 	}
 
-	void Clear(void) noexcept;
+	
 
 	ErrMessage &operator=(ErrMessage &&_Move) noexcept
 	{
