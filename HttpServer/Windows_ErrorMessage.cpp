@@ -31,11 +31,6 @@ ErrorMessage::ErrorMessage(uint32_t u32ErrCode) noexcept
 	}
 }
 
-ErrorMessage::~ErrorMessage(void) noexcept
-{
-	Clear();
-}
-
 void ErrorMessage::Clear(void) noexcept
 {
 	if (pMsg != NULL)

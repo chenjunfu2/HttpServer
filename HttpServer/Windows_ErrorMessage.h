@@ -21,7 +21,10 @@ public:
 
 	//因为实现需要win api，放在cpp内
 	explicit ErrorMessage(uint32_t u32ErrCode) noexcept;
-	~ErrorMessage(void) noexcept;
+	~ErrorMessage(void) noexcept
+	{
+		Clear();
+	}
 
 	ErrorMessage(ErrorMessage &&_Move) noexcept :
 		pMsg(_Move.pMsg),
