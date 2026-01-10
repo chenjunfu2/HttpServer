@@ -21,6 +21,12 @@
     <ClCompile Include="Windows_TcpSocket.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Windows_FileSystem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows_ErrorMessage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TcpSocket.hpp">
@@ -41,10 +47,24 @@
     <ClInclude Include="VirtualFileSystem.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Windows_FileSystem.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows_ErrorMessage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Request.txt">
       <Filter>资源文件</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\README.md">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

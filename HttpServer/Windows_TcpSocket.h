@@ -1,70 +1,13 @@
 ﻿#pragma once
 
+#include "CPP_Helper.h"
+#include "Windows_ErrorMessage.h"
+
 #include <stdint.h>
 #include <stddef.h>
-#include <string>
-
-#include "CPP_Helper.h"
 
 using SOCKET_T = void *;
 SOCKET_T GetUnInitSocket(void);
-
-class ErrMessage
-{
-private:
-	const char *pMsg;
-	size_t szLength;
-
-private:
-	void Clear(void) noexcept;
-
-public:
-	DELETE_COPY(ErrMessage);
-
-	//因为实现需要win api，放在cpp内
-	ErrMessage(uint32_t u32ErrCode) noexcept;
-	~ErrMessage(void) noexcept;
-
-	ErrMessage(ErrMessage &&_Move) noexcept :
-		pMsg(_Move.pMsg),
-		szLength(_Move.szLength)
-	{
-		_Move.pMsg = NULL;
-		_Move.szLength = 0;
-	}
-
-	
-
-	ErrMessage &operator=(ErrMessage &&_Move) noexcept
-	{
-		Clear();
-
-		pMsg = _Move.pMsg;
-		szLength = _Move.szLength;
-
-		_Move.pMsg = NULL;
-		_Move.szLength = 0;
-
-		return *this;
-	}
-
-	std::string_view GetStrView(void) const noexcept
-	{
-		return pMsg != NULL
-			? std::string_view(pMsg, szLength)	//指针非空返回实际说明	
-			: std::string_view("", 0);			//指针为空返回空字符串
-	}
-
-	bool IsGetMessageError(void) const noexcept
-	{
-		return pMsg == NULL && szLength != 0;
-	}
-
-	uint32_t GetMessageErrorError(void) const noexcept
-	{
-		return (uint32_t)szLength;
-	}
-};
 
 class SocketError
 {
@@ -150,9 +93,9 @@ public:
 		return MapSocketError(u32SysErrorCode);
 	}
 
-	ErrMessage ToErrMessage(void) const noexcept
+	ErrorMessage ToErrMessage(void) const noexcept
 	{
-		return ErrMessage(u32SysErrorCode);
+		return ErrorMessage(u32SysErrorCode);
 	}
 };
 

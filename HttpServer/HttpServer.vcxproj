@@ -154,6 +154,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Windows_ErrorMessage.cpp" />
+    <ClCompile Include="Windows_FileSystem.cpp" />
     <ClCompile Include="Windows_TcpSocket.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -162,10 +164,16 @@
     <ClInclude Include="MyAssert.hpp" />
     <ClInclude Include="TcpSocket.hpp" />
     <ClInclude Include="VirtualFileSystem.hpp" />
+    <ClInclude Include="Windows_ErrorMessage.h" />
+    <ClInclude Include="Windows_FileSystem.h" />
     <ClInclude Include="Windows_TcpSocket.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Request.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LICENSE" />
+    <None Include="..\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

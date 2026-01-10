@@ -6,12 +6,22 @@
 
 struct File
 {
+public:
+	struct FileData
+	{
+		const void *pData;
+		const size_t szSize;
+	};
+
 private:
 	enum class StorageMode : size_t
 	{
 		UNDEFINE = 0,
 		DISK_ONLY,
 		MEMORY_CACHED,
+		MEMORY_MAPPED,
+		NO_FOUND,
+		ACCESS_DENIED,
 		ENUM_END,
 	};
 
@@ -20,16 +30,6 @@ private:
 	private:
 		void *pFileData;
 		size_t szFileSize;
-
-	private:
-		void Clear(void)
-		{
-			if (pFileData != NULL)
-			{
-				free(pFileData);
-				szFileSize = 0;
-			}
-		}
 
 	public:
 		MemoryCache(void):
@@ -64,6 +64,15 @@ private:
 			return *this;
 		}
 
+		void Clear(void)
+		{
+			if (pFileData != NULL)
+			{
+				free(pFileData);
+				szFileSize = 0;
+			}
+		}
+
 		GETTER_COPY(FileData, pFileData);
 		GETTER_COPY(FileSize, szFileSize);
 
@@ -79,13 +88,11 @@ private:
 
 	};
 
-public:
+
+private:
 	StorageMode modeStorage;
 	std::filesystem::path pathFile;
 	MemoryCache cacheFile;
-private:
-
-
 
 public:
 	File(void) :
@@ -99,7 +106,22 @@ public:
 
 	DELETE_COPY(File);
 
-	void LoadFile(size_t szCacheSizeMax)
+	GETTER_COPY(StorageMode, modeStorage);
+
+	GETTER_CREF(FilePath, pathFile);
+
+	void SetFilePath(std::filesystem::path &pathNew)
+	{
+		if (modeStorage == StorageMode::MEMORY_CACHED)
+		{
+			cacheFile.Clear();
+		}
+
+		pathFile = pathNew;
+		modeStorage = StorageMode::DISK_ONLY;
+	}
+
+	FileData GetFileData(void)
 	{
 
 
@@ -107,8 +129,10 @@ public:
 
 	}
 
+	void FlushFileCache(void)
+	{
 
-
+	}
 
 
 
@@ -120,49 +144,7 @@ public:
 class VirtualFileSystem
 {
 private:
-
-
-
 	std::unordered_map<std::string, File> mapFile;//映射http请求key到实际文件路径path
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
