@@ -80,11 +80,16 @@ private:
 		{
 			//open file
 			//malloc memory
-			//load file
+			//read file to memory
 			//close file
 
 			return true;
 		}
+
+	};
+
+	class MemoryMapping
+	{
 
 	};
 

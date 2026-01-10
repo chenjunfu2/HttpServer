@@ -53,6 +53,9 @@
     <ClInclude Include="Windows_ErrorMessage.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="FileSystem.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Request.txt">

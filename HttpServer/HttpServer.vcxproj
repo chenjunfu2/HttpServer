@@ -160,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPP_Helper.h" />
+    <ClInclude Include="FileSystem.hpp" />
     <ClInclude Include="HttpServer.hpp" />
     <ClInclude Include="MyAssert.hpp" />
     <ClInclude Include="TcpSocket.hpp" />
