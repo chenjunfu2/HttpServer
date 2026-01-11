@@ -7,7 +7,7 @@
 #include <stddef.h>
 
 
-ErrorMessage MappingFile(const char *pcFileName, void *&pFile, uint64_t &u64FileSize);
+ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64FileSize);
 ErrorMessage UnMapFile(void *&pFileClose);
 
 
@@ -41,6 +41,14 @@ class FileSystem
 {
 public:
 	using FILE_T = void *;
+
+	enum class FileOpenMode
+	{
+
+
+
+
+	};
 
 protected:
 	static FILE_T GetUnInitFile(void) noexcept;

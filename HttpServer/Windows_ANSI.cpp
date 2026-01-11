@@ -34,8 +34,7 @@ SystemError ConvertUtf16ToAnsi(const std::basic_string<wchar_t> &u16String, std:
 		return SystemError(GetLastError());
 	}
 
-	//创建string并预分配大小
-	std::basic_string<char> ansiString;
+	//预分配大小
 	ansiString.resize(lengthNeeded);
 
 	// 执行实际转换
@@ -88,8 +87,7 @@ SystemError ConvertUtf16ToUtf8(const std::basic_string<wchar_t> &u16String, std:
 		return SystemError(GetLastError());
 	}
 
-	//创建string并预分配大小
-	std::basic_string<char8_t> u8String;
+	//预分配大小
 	u8String.resize(lengthNeeded);
 
 	// 执行实际转换
