@@ -207,7 +207,7 @@ bool TcpSocket::Accept(TcpSocket &socketClient, uint16_t &u16ClientPort, uint32_
 	}
 
 	socketClient.socketData = (SOCKET_T)socketNew;
-	socketClient.socketError = 
+	socketClient.socketError = socketClient.socketError.GetNoError();
 	u16ClientPort = ntohs(sockClientInfo.sin_port);
 	u32ClientAddr = ntohl(sockClientInfo.sin_addr.s_addr);
 

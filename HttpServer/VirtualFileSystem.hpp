@@ -157,7 +157,7 @@ public:
 class VirtualFileSystem
 {
 private:
-	std::unordered_map<std::string, File> mapFile;//映射http请求key到实际文件路径path
+	std::unordered_map<std::string, ReadOnlyFile> mapFile;//映射http请求key到实际文件路径path
 
 
 

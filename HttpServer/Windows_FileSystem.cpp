@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 
-FILE_T GetUnInitFile(void)
+FileSystem::FILE_T FileSystem::GetUnInitFile(void) noexcept
 {
 	return INVALID_HANDLE_VALUE;
 }

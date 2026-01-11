@@ -18,7 +18,7 @@ public:
 	using FILE_T = void *;
 
 protected:
-	FILE_T GetUnInitFile(void);
+	static FILE_T GetUnInitFile(void) noexcept;
 
 private:
 	FILE_T fileData;

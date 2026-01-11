@@ -1,7 +1,7 @@
 ﻿#include "Windows_TcpSocket.h"
 #include "MyAssert.hpp"
 
-#include "TcpSocket.hpp"
+#include "Windows_TcpSocket.h"
 
 #include <stdio.h>
 #include <string>
@@ -29,37 +29,37 @@ Content-Language: en-US
 
 #define BIND_PORT 25565
 
-#define CALL_FUNC_ASSERT(func_name,...)\
+#define CALL_FUNC_ASSERT(object_name, func_name, ...)\
 do\
 {\
-	SocketError e = func_name(__VA_ARGS__);\
-	if (e.IsError())\
-	{\
-		MyAssert(false, "[" #func_name "] Error [%d]: %s", e.GetSysErrorCode(), e.ToErrMessage().GetStrView().data());\
-	}\
+	MyAssert(object_name.func_name(__VA_ARGS__), "[" #object_name "." #func_name "()] Error [%d]: %s",\
+			object_name.GetSocketError().GetSysErrorCode(), \
+			object_name.GetSocketError().ToErrorMessage().GetStrView().data());\
 } while (0)
 
 int main(void)
 {
 	//设置为UTF8编码
-	MyAssert(setlocale(LC_ALL, ".UTF-8"), "setlocale fail");
+	MyAssert(setlocale(LC_ALL, ".UTF-8") != NULL, "setlocale fail");
 
-	CALL_FUNC_ASSERT(Startup);
+	TcpSocket sockServer{};
+	MyAssert(!sockServer.GetSockInitError(), "Socket Init Error [%d]: %s",
+		sockServer.GetSockInitError().GetSysErrorCode(),
+		sockServer.GetSockInitError().ToErrorMessage().GetStrView().data());
 
-	SOCKET_T sock{};
 
-	CALL_FUNC_ASSERT(OpenSocket, sock);
-	CALL_FUNC_ASSERT(BindSocket, sock, BIND_PORT, 0);
-	CALL_FUNC_ASSERT(ListenSocket, sock, 2);
+	CALL_FUNC_ASSERT(sockServer, Open);
+	CALL_FUNC_ASSERT(sockServer, Bind, BIND_PORT, 0);
+	CALL_FUNC_ASSERT(sockServer, Listen, 2);
 
 	while (true)
 	{
 		printf("Listening [0.0.0.0:%d] ...\n", BIND_PORT);
 
-		SOCKET_T sockclient{};
+		TcpSocket sockclient{};
 		uint16_t u16ClientPort{};
 		uint32_t u32ClientAddr{};
-		CALL_FUNC_ASSERT(AcceptSocket, sock, sockclient, u16ClientPort, u32ClientAddr);
+		CALL_FUNC_ASSERT(sockServer, Accept, sockclient, u16ClientPort, u32ClientAddr);
 
 		printf("Client Connection: [%d.%d.%d.%d:%d]\n", 
 			(uint8_t)((u32ClientAddr >> 3 * 8) & 0xFF),
@@ -73,14 +73,12 @@ int main(void)
 		char charArrRecvData[RECV_SIZE];
 		while (true)
 		{
-			SocketError e{};
-
 			uint32_t u32BufferSize = RECV_SIZE;
-			e = SocketRecvPartial(sockclient, charArrRecvData, u32BufferSize);
-			if (e)
+			if (！sockclient.RecvPartial(charArrRecvData, u32BufferSize))
 			{
-				printf("[RecvDataPartial] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrMessage().GetStrView().data());
-				CALL_FUNC_ASSERT(CloseSocket, sockclient);
+				SocketError e = sockclient.GetSocketError();
+				printf("[sockclient.RecvPartial()] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrorMessage().GetStrView().data());
+				CALL_FUNC_ASSERT(sockclient, Close);
 				break;
 			}
 
@@ -96,24 +94,23 @@ int main(void)
 
 			u32BufferSize = sizeof(rsp) - 1;
 			bool bClientClose = false;
-			e = SocketSendAll(sockclient, rsp, u32BufferSize, bClientClose);
-			if (e)
+			if (!sockclient.SendAll(rsp, u32BufferSize, bClientClose))
 			{
-				printf("[SendDataAll] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrMessage().GetStrView().data());
-				CALL_FUNC_ASSERT(CloseSocket, sockclient);
+				SocketError e = sockclient.GetSocketError();
+				printf("[SendDataAll] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrorMessage().GetStrView().data());
+				CALL_FUNC_ASSERT(sockclient, Close);
 				break;
 			}
 
 			if (bClientClose)
 			{
 				printf("Connect Closed\n");
-				CALL_FUNC_ASSERT(CloseSocket, sockclient);
+				CALL_FUNC_ASSERT(sockclient, Close);
 				break;
 			}
 		}
 	}
 
-	CALL_FUNC_ASSERT(CloseSocket,sock);
-	CALL_FUNC_ASSERT(Cleanup);
+	CALL_FUNC_ASSERT(sockServer, Close);
 	return 0;
 }

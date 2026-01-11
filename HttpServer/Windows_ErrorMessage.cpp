@@ -12,7 +12,7 @@ ErrorMessage::ErrorMessage(uint32_t u32ErrCode) noexcept
 		FORMAT_MESSAGE_ALLOCATE_BUFFER,		//自行分配字符串内存（需要后续手动释放）
 		NULL,								//忽略
 		u32ErrCode,							//需要查询的错误码
-		LANG_USER_DEFAULT,					//用户当前语言
+		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),//英文
 		(LPSTR)&pRet,						//系统分配字符串
 		0,									//预分配长度（从0起）
 		NULL								//忽略

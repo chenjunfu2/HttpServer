@@ -78,6 +78,7 @@ public:
 	SocketError &operator=(uint32_t _u32SysErrorCode)
 	{
 		u32SysErrorCode = _u32SysErrorCode;
+		return *this;
 	}
 
 	explicit operator bool(void) const noexcept//返回是否有错误，有错误为true，否则false
@@ -97,7 +98,7 @@ public:
 		return MapSocketError(u32SysErrorCode);
 	}
 
-	ErrorMessage ToErrMessage(void) const noexcept
+	ErrorMessage ToErrorMessage(void) const noexcept
 	{
 		return ErrorMessage(u32SysErrorCode);
 	}
@@ -151,6 +152,7 @@ protected:
 
 	static SOCKET_T GetUnInitSocket(void) noexcept;
 
+public:
 	void Clear(void) noexcept
 	{
 		if (!IsValid())
@@ -161,7 +163,6 @@ protected:
 		socketError = socketError.GetNoError();
 	}
 
-public:
 	TcpSocket(void) noexcept :
 		socketData(GetUnInitSocket()),
 		socketError()
@@ -187,11 +188,13 @@ public:
 		socketError = std::move(_Move.socketError);
 
 		_Move.socketData = GetUnInitSocket();
+
+		return *this;
 	}
 
 	DELETE_COPY(TcpSocket);
-	GETTER_COPY(GetSocketError, socketError);
-	GETTER_COPY(GetSocketRaw, socketData);
+	GETTER_COPY(SocketError, socketError);
+	GETTER_COPY(SocketRaw, socketData);
 
 	bool Open(void) noexcept;
 
