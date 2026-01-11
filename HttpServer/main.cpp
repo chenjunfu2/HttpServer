@@ -74,7 +74,7 @@ int main(void)
 		while (true)
 		{
 			uint32_t u32BufferSize = RECV_SIZE;
-			if (！sockclient.RecvPartial(charArrRecvData, u32BufferSize))
+			if (!sockclient.RecvPartial(charArrRecvData, u32BufferSize))
 			{
 				SocketError e = sockclient.GetSocketError();
 				printf("[sockclient.RecvPartial()] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrorMessage().GetStrView().data());
