@@ -154,6 +154,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Windows_ANSI.cpp" />
     <ClCompile Include="Windows_SystemError.cpp" />
     <ClCompile Include="Windows_ErrorMessage.cpp" />
     <ClCompile Include="Windows_FileSystem.cpp" />
@@ -164,6 +165,7 @@
     <ClInclude Include="HttpServer.hpp" />
     <ClInclude Include="MyAssert.hpp" />
     <ClInclude Include="VirtualFileSystem.hpp" />
+    <ClInclude Include="Windows_ANSI.h" />
     <ClInclude Include="Windows_SystemError.h" />
     <ClInclude Include="Windows_ErrorMessage.h" />
     <ClInclude Include="Windows_FileSystem.h" />

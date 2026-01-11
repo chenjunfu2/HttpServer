@@ -48,6 +48,9 @@
     <ClCompile Include="Windows_SystemError.cpp">
       <Filter>源文件\Platform\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="Windows_ANSI.cpp">
+      <Filter>源文件\Platform\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HttpServer.hpp">
@@ -72,6 +75,9 @@
       <Filter>头文件\Platform\Windows</Filter>
     </ClInclude>
     <ClInclude Include="Windows_SystemError.h">
+      <Filter>头文件\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows_ANSI.h">
       <Filter>头文件\Platform\Windows</Filter>
     </ClInclude>
   </ItemGroup>

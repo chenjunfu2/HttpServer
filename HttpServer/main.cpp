@@ -40,7 +40,7 @@ do\
 int main(void)
 {
 	//设置为UTF8编码
-	MyAssert(setlocale(LC_ALL, ".UTF-8") != NULL, "setlocale fail");
+	//MyAssert(setlocale(LC_ALL, ".UTF-8") != NULL, "setlocale fail");
 
 	TcpSocket sockServer{};
 	MyAssert(!sockServer.GetSockInitError(), "Socket Init Error [%d]: %s",
