@@ -70,6 +70,12 @@ ErrorMessage UnMapFile(void *&pFileClose)
 }
 
 
-//TODO:实现窗口滚动映射
+
+
+
+
+
+
+
 
 
