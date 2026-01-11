@@ -33,8 +33,8 @@ Content-Language: en-US
 do\
 {\
 	MyAssert(object_name.func_name(__VA_ARGS__), "[" #object_name "." #func_name "()] Error [%d]: %s",\
-			object_name.GetSocketError().GetSysErrorCode(), \
-			object_name.GetSocketError().ToErrorMessage().GetStrView().data());\
+			object_name.GetSocketError().GetErrorCode(), \
+			object_name.GetSocketError().GetErrorMessage().GetStrView().data());\
 } while (0)
 
 int main(void)
@@ -44,8 +44,8 @@ int main(void)
 
 	TcpSocket sockServer{};
 	MyAssert(!sockServer.GetSockInitError(), "Socket Init Error [%d]: %s",
-		sockServer.GetSockInitError().GetSysErrorCode(),
-		sockServer.GetSockInitError().ToErrorMessage().GetStrView().data());
+		sockServer.GetSockInitError().GetErrorCode(),
+		sockServer.GetSockInitError().GetErrorMessage().GetStrView().data());
 
 
 	CALL_FUNC_ASSERT(sockServer, Open);
@@ -77,7 +77,7 @@ int main(void)
 			if (!sockclient.RecvPartial(charArrRecvData, u32BufferSize))
 			{
 				SocketError e = sockclient.GetSocketError();
-				printf("[sockclient.RecvPartial()] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrorMessage().GetStrView().data());
+				printf("[sockclient.RecvPartial()] Error [%d]: %s\n", e.GetErrorCode(), e.GetErrorMessage().GetStrView().data());
 				CALL_FUNC_ASSERT(sockclient, Close);
 				break;
 			}
@@ -97,7 +97,7 @@ int main(void)
 			if (!sockclient.SendAll(rsp, u32BufferSize, bClientClose))
 			{
 				SocketError e = sockclient.GetSocketError();
-				printf("[SendDataAll] Error [%d]: %s\n", e.GetSysErrorCode(), e.ToErrorMessage().GetStrView().data());
+				printf("[SendDataAll] Error [%d]: %s\n", e.GetErrorCode(), e.GetErrorMessage().GetStrView().data());
 				CALL_FUNC_ASSERT(sockclient, Close);
 				break;
 			}
