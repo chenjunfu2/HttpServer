@@ -171,6 +171,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Request.txt" />
+    <Text Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE" />

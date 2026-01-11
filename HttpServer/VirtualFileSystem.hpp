@@ -4,7 +4,7 @@
 
 #include "CPP_Helper.h"
 
-struct File
+struct ReadOnlyFile
 {
 public:
 	struct FileData
@@ -100,16 +100,16 @@ private:
 	MemoryCache cacheFile;
 
 public:
-	File(void) :
+	ReadOnlyFile(void) :
 		modeStorage(StorageMode::UNDEFINE),
 		pathFile(),
 		cacheFile()
 	{}
 
-	~File(void)
+	~ReadOnlyFile(void)
 	{}
 
-	DELETE_COPY(File);
+	DELETE_COPY(ReadOnlyFile);
 
 	GETTER_COPY(StorageMode, modeStorage);
 
@@ -125,6 +125,8 @@ public:
 		pathFile = pathNew;
 		modeStorage = StorageMode::DISK_ONLY;
 	}
+
+
 
 	FileData GetFileData(void)
 	{
