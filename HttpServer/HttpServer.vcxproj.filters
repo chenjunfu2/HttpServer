@@ -13,42 +13,66 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\Platform">
+      <UniqueIdentifier>{4cc2e019-6068-47fd-9da6-61e5013e890b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Platform\Windows">
+      <UniqueIdentifier>{71b6c07c-6440-4c81-b0b8-8669cda5a23c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Platform">
+      <UniqueIdentifier>{fd5742a3-8881-48b9-9a70-bd2aa6fdf3d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Platform\Windows">
+      <UniqueIdentifier>{2dfcc8dd-405b-4381-9dbd-851c97a8a7f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Common">
+      <UniqueIdentifier>{97fb56e0-8694-49e6-8540-6c8997e30ae7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Common\Helper">
+      <UniqueIdentifier>{23b6cb88-c4b1-49b2-80c3-11b9db686ec2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Windows_TcpSocket.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="Windows_ErrorMessage.cpp">
+      <Filter>源文件\Platform\Windows</Filter>
     </ClCompile>
     <ClCompile Include="Windows_FileSystem.cpp">
-      <Filter>源文件</Filter>
+      <Filter>源文件\Platform\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Windows_ErrorMessage.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="Windows_TcpSocket.cpp">
+      <Filter>源文件\Platform\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows_SystemError.cpp">
+      <Filter>源文件\Platform\Windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Windows_TcpSocket.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="HttpServer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MyAssert.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CPP_Helper.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="VirtualFileSystem.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Windows_FileSystem.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="CPP_Helper.h">
+      <Filter>头文件\Common\Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="MyAssert.hpp">
+      <Filter>头文件\Common\Helper</Filter>
     </ClInclude>
     <ClInclude Include="Windows_ErrorMessage.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows_FileSystem.h">
+      <Filter>头文件\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows_TcpSocket.h">
+      <Filter>头文件\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows_SystemError.h">
+      <Filter>头文件\Platform\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

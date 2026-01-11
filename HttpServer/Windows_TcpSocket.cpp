@@ -54,11 +54,6 @@ SocketError::ErrorCode SocketError::MapSocketError(uint32_t u32ErrorCode)
 	}
 }
 
-uint32_t SocketError::GetNoError(void) noexcept
-{
-	return (uint32_t)NO_ERROR;
-}
-
 TcpSocket::SockInit::SockInit(void) :e()
 {
 	WSADATA wsaData{};
@@ -83,7 +78,7 @@ TcpSocket::SockInit::~SockInit(void)
 		return;
 	}
 
-	e = e.GetNoError();
+	e.Clear();
 }
 
 TcpSocket::SOCKET_T TcpSocket::GetUnInitSocket(void) noexcept
@@ -207,7 +202,8 @@ bool TcpSocket::Accept(TcpSocket &socketClient, uint16_t &u16ClientPort, uint32_
 	}
 
 	socketClient.socketData = (SOCKET_T)socketNew;
-	socketClient.socketError = socketClient.socketError.GetNoError();
+	socketClient.socketError.Clear();
+
 	u16ClientPort = ntohs(sockClientInfo.sin_port);
 	u32ClientAddr = ntohl(sockClientInfo.sin_addr.s_addr);
 

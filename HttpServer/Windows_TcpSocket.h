@@ -1,14 +1,16 @@
 ﻿#pragma once
 
 #include "CPP_Helper.h"
-#include "Windows_ErrorMessage.h"
+#include "Windows_SystemError.h"
 
 #include <stdint.h>
 #include <stddef.h>
 
-class SocketError
+class SocketError : public SystemError
 {
 public:
+	using Base = SystemError;
+
 	enum ErrorCode :uint8_t
 	{
 		NO_ERR = 0,		//无错误
@@ -56,51 +58,16 @@ public:
 		ENUM_END,			//enum结束标记
 	};
 
-private:
-	uint32_t u32SysErrorCode = GetNoError();
-
 protected:
-	static ErrorCode MapSocketError(uint32_t u32ErrCode);
+	static ErrorCode MapSocketError(uint32_t u32ErrorCode);
 
 public:
-	DEFAULT_CSTC(SocketError);
-	DEFAULT_CPMV(SocketError);
-	DEFAULT_DSTC(SocketError);
+	using Base::Base;
+	using Base::operator=;
 
-	//阻止隐式转换构造
-	explicit SocketError(uint32_t _u32SysErrorCode) :
-		u32SysErrorCode(_u32SysErrorCode)
-	{}
-
-	GETTER_COPY(SysErrorCode, u32SysErrorCode);
-	SETTER_CPMV(SysErrorCode, u32SysErrorCode);
-
-	SocketError &operator=(uint32_t _u32SysErrorCode)
+	ErrorCode GetSocketErrorCode(void) const noexcept
 	{
-		u32SysErrorCode = _u32SysErrorCode;
-		return *this;
-	}
-
-	explicit operator bool(void) const noexcept//返回是否有错误，有错误为true，否则false
-	{
-		return IsError();
-	}
-
-	static uint32_t GetNoError(void) noexcept;
-
-	bool IsError(void) const noexcept
-	{
-		return u32SysErrorCode != GetNoError();
-	}
-
-	ErrorCode ToErrorCode(void) const noexcept
-	{
-		return MapSocketError(u32SysErrorCode);
-	}
-
-	ErrorMessage ToErrorMessage(void) const noexcept
-	{
-		return ErrorMessage(u32SysErrorCode);
+		return MapSocketError(Base::u32ErrorCode);
 	}
 };
 
@@ -160,7 +127,7 @@ public:
 			Close();
 		}
 
-		socketError = socketError.GetNoError();
+		socketError.Clear();
 	}
 
 	TcpSocket(void) noexcept :
