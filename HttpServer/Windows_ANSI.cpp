@@ -16,7 +16,7 @@ SystemError ConvertUtf16ToAnsi(const std::basic_string<wchar_t> &u16String, std:
 	const int lengthNeeded = WideCharToMultiByte(//注意此函数u16接受字符数，而u8接受字节数
 		CP_ACP,                // 使用当前ANSI代码页
 		WC_NO_BEST_FIT_CHARS,  // 替换无法直接映射的字符
-		(wchar_t*)u16String.data(),//直接写入底层
+		(wchar_t*)u16String.data(),
 		u16String.size(),//主动传入大小，则转换结果不包含\0
 		NULL,
 		0,
@@ -70,7 +70,7 @@ SystemError ConvertUtf16ToUtf8(const std::basic_string<wchar_t> &u16String, std:
 	const int lengthNeeded = WideCharToMultiByte(//注意此函数u16接受字符数，而u8接受字节数
 		CP_UTF8,                // 使用CP_UTF8代码页
 		WC_NO_BEST_FIT_CHARS,  // 替换无法直接映射的字符
-		(wchar_t *)u16String.data(),//static_assert保证底层大小相同
+		(wchar_t *)u16String.data(),
 		u16String.size(),//主动传入大小，则转换结果不包含\0
 		NULL,
 		0,
