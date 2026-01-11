@@ -2,10 +2,15 @@
 
 #include <Windows.h>
 
-ErrorMessage OpenFileAndMapping(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64FileSize)
+FILE_T GetUnInitFile(void)
+{
+	return INVALID_HANDLE_VALUE;
+}
+
+ErrorMessage MappingFile(const char *pcFileName, void *&pFile, uint64_t &u64FileSize)
 {
 	//打开输入文件并映射
-	HANDLE hReadFile = CreateFileW(pwcFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hReadFile = CreateFileA(pcFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hReadFile == INVALID_HANDLE_VALUE)
 	{
 		return ErrorMessage(GetLastError());
@@ -53,7 +58,7 @@ ErrorMessage OpenFileAndMapping(const wchar_t *pwcFileName, void *&pFile, uint64
 	return {};
 }
 
-ErrorMessage UnMappingAndCloseFile(void *&pFileClose)
+ErrorMessage UnMapFile(void *&pFileClose)
 {
 	if (!UnmapViewOfFile(pFileClose))
 	{

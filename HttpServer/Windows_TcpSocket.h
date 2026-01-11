@@ -6,9 +6,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-using SOCKET_T = void *;
-SOCKET_T GetUnInitSocket(void);
-
 class SocketError
 {
 public:
@@ -60,7 +57,7 @@ public:
 	};
 
 private:
-	uint32_t u32SysErrorCode = 0;//默认值0，无错误
+	uint32_t u32SysErrorCode = GetNoError();
 
 protected:
 	static ErrorCode MapSocketError(uint32_t u32ErrCode);
@@ -78,14 +75,21 @@ public:
 	GETTER_COPY(SysErrorCode, u32SysErrorCode);
 	SETTER_CPMV(SysErrorCode, u32SysErrorCode);
 
+	SocketError &operator=(uint32_t _u32SysErrorCode)
+	{
+		u32SysErrorCode = _u32SysErrorCode;
+	}
+
 	explicit operator bool(void) const noexcept//返回是否有错误，有错误为true，否则false
 	{
 		return IsError();
 	}
 
+	static uint32_t GetNoError(void) noexcept;
+
 	bool IsError(void) const noexcept
 	{
-		return u32SysErrorCode != 0;//不为0则出错，返回true，否则false
+		return u32SysErrorCode != GetNoError();
 	}
 
 	ErrorCode ToErrorCode(void) const noexcept
@@ -99,24 +103,122 @@ public:
 	}
 };
 
+class TcpSocket
+{
+private:
+	class SockInit
+	{
+	private:
+		SocketError e;
+	public:
+		SockInit(void);
+		~SockInit(void);
 
-SocketError Startup(void);
-SocketError Cleanup(void);
+		DELETE_CPMV(SockInit);
 
-SocketError OpenSocket(SOCKET_T &socketOpen);
-SocketError CloseSocket(SOCKET_T &socketClose);
+		SocketError GetError() const noexcept
+		{
+			return e;
+		}
+	};
 
-SocketError ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32ServerAddr);
-SocketError BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerAddr);
-SocketError ListenSocket(SOCKET_T socketListen, uint32_t u32MaxPendingConnections);
-SocketError AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr);
+	//全局单次初始化保证，线程安全保证，程序生命周期结束析构保证
+	static inline const SockInit sockInit{};
 
-enum class SocketShutdown : int { RECEIVE = 0, SEND = 1, BOTH = 2 };
-SocketError ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown);
+public:
+	enum class ShutdownType : int
+	{
+		RECEIVE = 0, SEND = 1, BOTH = 2
+	};
 
-SocketError SocketSendPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize);
-SocketError SocketSendAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
+	static SocketError GetSockInitError(void) noexcept
+	{
+		return sockInit.GetError();
+	}
 
-SocketError SocketRecvPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize);
-SocketError SocketRecvAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed);
+	using SOCKET_T = void *;
 
+private:
+	SOCKET_T socketData;
+	SocketError socketError;
+
+protected:
+	//直接从内部成员对象构造
+	TcpSocket(SOCKET_T _socketData, SocketError _socketError) :
+		socketData(_socketData),
+		socketError(socketError)
+	{}
+
+	static SOCKET_T GetUnInitSocket(void) noexcept;
+
+	void Clear(void) noexcept
+	{
+		if (!IsValid())
+		{
+			Close();
+		}
+
+		socketError = socketError.GetNoError();
+	}
+
+public:
+	TcpSocket(void) noexcept :
+		socketData(GetUnInitSocket()),
+		socketError()
+	{}
+
+	~TcpSocket(void) noexcept
+	{
+		Clear();
+	}
+
+	TcpSocket(TcpSocket &&_Move) noexcept :
+		socketData(_Move.socketData),
+		socketError(std::move(_Move.socketError))
+	{
+		_Move.socketData = GetUnInitSocket();
+	}
+
+	TcpSocket &operator=(TcpSocket &&_Move) noexcept
+	{
+		Clear();
+
+		socketData = _Move.socketData;
+		socketError = std::move(_Move.socketError);
+
+		_Move.socketData = GetUnInitSocket();
+	}
+
+	DELETE_COPY(TcpSocket);
+	GETTER_COPY(GetSocketError, socketError);
+	GETTER_COPY(GetSocketRaw, socketData);
+
+	bool Open(void) noexcept;
+
+	bool Close(void) noexcept;
+
+	bool IsValid(void) const noexcept;
+
+	explicit operator bool(void) const noexcept
+	{
+		return IsValid();
+	}
+
+	bool Connect(uint16_t u16ServerPort, uint32_t u32ServerAddr) noexcept;
+
+	bool Bind(uint16_t u16ServerPort, uint32_t u32ServerAddr) noexcept;
+
+	bool Listen(int32_t i32MaxPendingConnections) noexcept;
+
+	bool Accept(TcpSocket &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr) noexcept;
+
+	bool Shutdown(ShutdownType enShutdownType) noexcept;
+
+	bool SendPartial(const void *pDataBuffer, uint32_t &u32BufferSize) noexcept;
+
+	bool SendAll(const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed) noexcept;
+
+	bool RecvPartial(void *pDataBuffer, uint32_t &u32BufferSize) noexcept;
+
+	bool RecvAll(void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed) noexcept;
+};

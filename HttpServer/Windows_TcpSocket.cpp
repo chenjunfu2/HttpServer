@@ -5,11 +5,6 @@
 
 #pragma comment(lib ,"ws2_32.lib")
 
-SOCKET_T GetUnInitSocket(void)
-{
-	return (SOCKET_T)INVALID_SOCKET;
-}
-
 SocketError::ErrorCode SocketError::MapSocketError(uint32_t u32ErrorCode)
 {
 	switch (u32ErrorCode)
@@ -59,33 +54,51 @@ SocketError::ErrorCode SocketError::MapSocketError(uint32_t u32ErrorCode)
 	}
 }
 
-SocketError Startup(void)
+uint32_t SocketError::GetNoError(void) noexcept
+{
+	return (uint32_t)NO_ERROR;
+}
+
+TcpSocket::SockInit::SockInit(void) :e()
 {
 	WSADATA wsaData{};
 
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
-		return SocketError(WSAGetLastError());
+		e = WSAGetLastError();
 	}
 
 	if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2)
 	{
 		WSACleanup();//不可接受的wsa版本，清理资源
-		return SocketError(WSAVERNOTSUPPORTED);//主动返回指定错误码
+		e = WSAVERNOTSUPPORTED;//主动返回指定错误码
+	}
+}
+
+TcpSocket::SockInit::~SockInit(void)
+{
+	if (WSACleanup() != 0)
+	{
+		e = WSAGetLastError();
+		return;
 	}
 
-	return {};
+	e = e.GetNoError();
 }
 
-SocketError Cleanup(void)
+TcpSocket::SOCKET_T TcpSocket::GetUnInitSocket(void) noexcept
 {
-	return WSACleanup() != 0
-		? SocketError(WSAGetLastError())
-		: SocketError{};
+	return (SOCKET_T)INVALID_SOCKET;
 }
 
-SocketError OpenSocket(SOCKET_T &socketOpen)
+bool TcpSocket::Open(void) noexcept
 {
+	if (IsValid())
+	{
+		socketError = WSAEALREADY;
+		return false;
+	}
+
 	SOCKET socketNew = socket
 	(
 		AF_INET,	//IPV4
@@ -95,49 +108,33 @@ SocketError OpenSocket(SOCKET_T &socketOpen)
 
 	if (socketNew == INVALID_SOCKET)
 	{
-		return SocketError(WSAGetLastError());
+		socketError = WSAGetLastError();
+		return false;
 	}
 
-	socketOpen = (SOCKET_T)socketNew;
+	socketData = (SOCKET_T)socketNew;
 
-	return {};
+	return true;
 }
 
-SocketError CloseSocket(SOCKET_T &socketClose)
+bool TcpSocket::Close(void) noexcept
 {
-	if (closesocket((SOCKET)socketClose) != 0)
+	if (closesocket((SOCKET)socketData) != 0)
 	{
-		return SocketError(WSAGetLastError());
+		socketError = WSAGetLastError();
+		return false;
 	}
 
-	socketClose = (SOCKET_T)INVALID_SOCKET;
-	return {};
+	socketData = GetUnInitSocket();
+	return true;
 }
 
-SocketError ConnectSocket(SOCKET_T socketConnect, uint16_t u16ServerPort, uint32_t u32ServerAddr)
+bool TcpSocket::IsValid(void) const noexcept
 {
-	const SOCKADDR_IN sockServerInfo
-	{
-		.sin_family = AF_INET,				//IPV4 - TCP/UDP
-		.sin_port = htons(u16ServerPort),	//port（网络字节序）
-		.sin_addr =
-		{
-			.S_un =
-			{
-				.S_addr = htonl(u32ServerAddr)//ip（网络字节序）
-			}
-		},
-	};
-
-	if (connect((SOCKET)socketConnect, (const sockaddr *)&sockServerInfo, sizeof(sockServerInfo)) != 0)
-	{
-		return SocketError(WSAGetLastError());
-	}
-
-	return {};
+	return socketData != GetUnInitSocket();
 }
 
-SocketError BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32ServerAddr)
+bool TcpSocket::Connect(uint16_t u16ServerPort, uint32_t u32ServerAddr) noexcept
 {
 	const SOCKADDR_IN sockServerInfo
 	{
@@ -152,73 +149,104 @@ SocketError BindSocket(SOCKET_T socketBind, uint16_t u16ServerPort, uint32_t u32
 		},
 	};
 
-	if (bind((SOCKET)socketBind, (const sockaddr *)&sockServerInfo, sizeof(sockServerInfo)) != 0)
+	if (connect((SOCKET)socketData, (const sockaddr *)&sockServerInfo, sizeof(sockServerInfo)) != 0)
 	{
-		return SocketError(WSAGetLastError());
+		socketError = WSAGetLastError();
+		return false;
 	}
 
-	return {};
+	return true;
 }
 
-SocketError ListenSocket(SOCKET_T socketListen, uint32_t u32MaxPendingConnections)
+bool TcpSocket::Bind(uint16_t u16ServerPort, uint32_t u32ServerAddr) noexcept
 {
-	if (listen((SOCKET)socketListen, u32MaxPendingConnections) != 0)
+	const SOCKADDR_IN sockServerInfo
 	{
-		return SocketError(WSAGetLastError());
+		.sin_family = AF_INET,				//IPV4 - TCP/UDP
+		.sin_port = htons(u16ServerPort),	//port（网络字节序）
+		.sin_addr =
+		{
+			.S_un =
+			{
+				.S_addr = htonl(u32ServerAddr)//ip（网络字节序）
+			}
+		},
+	};
+
+	if (bind((SOCKET)socketData, (const sockaddr *)&sockServerInfo, sizeof(sockServerInfo)) != 0)
+	{
+		socketError = WSAGetLastError();
+		return false;
 	}
 
-	return {};
+	return true;
 }
 
-SocketError AcceptSocket(SOCKET_T socketAccept, SOCKET_T &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr)
+bool TcpSocket::Listen(int32_t i32MaxPendingConnections) noexcept
+{
+	if (listen((SOCKET)socketData, i32MaxPendingConnections) != 0)
+	{
+		socketError = WSAGetLastError();
+		return false;
+	}
+
+	return true;
+}
+
+bool TcpSocket::Accept(TcpSocket &socketClient, uint16_t &u16ClientPort, uint32_t &u32ClientAddr) noexcept
 {
 	SOCKADDR_IN sockClientInfo{};
 
 	int addrlen = sizeof(sockClientInfo);
-	SOCKET socketNew = accept((SOCKET)socketAccept, (sockaddr *)&sockClientInfo, &addrlen);
+	SOCKET socketNew = accept((SOCKET)socketData, (sockaddr *)&sockClientInfo, &addrlen);
 
 	if (socketNew == INVALID_SOCKET)
 	{
-		return SocketError(WSAGetLastError());
+		socketError = WSAGetLastError();
+		return false;
 	}
 
-	socketClient = (SOCKET_T)socketNew;
+	socketClient.socketData = (SOCKET_T)socketNew;
+	socketClient.socketError = 
 	u16ClientPort = ntohs(sockClientInfo.sin_port);
 	u32ClientAddr = ntohl(sockClientInfo.sin_addr.s_addr);
 
-	return {};
+	return true;
 }
 
-SocketError ShutdownSocket(SOCKET_T socketShutdown, SocketShutdown enSocketShutdown)
+bool TcpSocket::Shutdown(ShutdownType enShutdownType) noexcept
 {
-	if (shutdown((SOCKET)socketShutdown, (int)enSocketShutdown) != 0)
+	if (shutdown((SOCKET)socketData, (int)enShutdownType) != 0)
 	{
-		return SocketError(WSAGetLastError());
+		socketError = WSAGetLastError();
+		return false;
 	}
 
-	return {};
+	return true;
 }
 
-SocketError SocketSendPartial(SOCKET_T socketSend, const void *pDataBuffer, uint32_t &u32BufferSize)
+bool TcpSocket::SendPartial(const void *pDataBuffer, uint32_t &u32BufferSize) noexcept
 {
-	int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, u32BufferSize, 0);
+	int iSendSize = send((SOCKET)socketData, (const char *)pDataBuffer, u32BufferSize, 0);
 	if (iSendSize == SOCKET_ERROR)
 	{
-		return SocketError(WSAGetLastError());
+		socketError = WSAGetLastError();
+		return false;
 	}
 
 	u32BufferSize = iSendSize;
-	return {};
+	return true;
 }
 
-SocketError SocketSendAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed)
+bool TcpSocket::SendAll(const void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed) noexcept
 {
 	while (true)
 	{
-		int iSendSize = send((SOCKET)socketSend, (const char *)pDataBuffer, u32BufferSize, 0);
+		int iSendSize = send((SOCKET)socketData, (const char *)pDataBuffer, u32BufferSize, 0);
 		if (iSendSize == SOCKET_ERROR)
 		{
-			return SocketError(WSAGetLastError());
+			socketError = WSAGetLastError();
+			return false;
 		}
 		else if (iSendSize == 0)
 		{
@@ -235,29 +263,31 @@ SocketError SocketSendAll(SOCKET_T socketSend, const void *pDataBuffer, uint32_t
 		}
 	}
 	
-	return {};
+	return true;
 }
 
-SocketError SocketRecvPartial(SOCKET_T socketRecv, void *pDataBuffer, uint32_t &u32BufferSize)
+bool TcpSocket::RecvPartial(void *pDataBuffer, uint32_t &u32BufferSize) noexcept
 {
-	int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, u32BufferSize, 0);
+	int iRecvSize = recv((SOCKET)socketData, (char *)pDataBuffer, u32BufferSize, 0);
 	if (iRecvSize == SOCKET_ERROR)
 	{
-		return SocketError(WSAGetLastError());
+		socketError = WSAGetLastError();
+		return false;
 	}
 
 	u32BufferSize = iRecvSize;
-	return {};
+	return true;
 }
 
-SocketError SocketRecvAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed)
+bool TcpSocket::RecvAll(void *pDataBuffer, uint32_t u32BufferSize, bool &bClientClosed) noexcept
 {
 	while (true)
 	{
-		int iRecvSize = recv((SOCKET)socketRecv, (char *)pDataBuffer, u32BufferSize, 0);
+		int iRecvSize = recv((SOCKET)socketData, (char *)pDataBuffer, u32BufferSize, 0);
 		if (iRecvSize == SOCKET_ERROR)
 		{
-			return SocketError(WSAGetLastError());
+			socketError = WSAGetLastError();
+			return false;
 		}
 		else if (iRecvSize == 0)
 		{
@@ -274,6 +304,7 @@ SocketError SocketRecvAll(SOCKET_T socketRecv, void *pDataBuffer, uint32_t u32Bu
 		}
 	}
 
-	return {};
+	return true;
 }
+
 

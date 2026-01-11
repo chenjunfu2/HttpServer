@@ -78,6 +78,8 @@ private:
 
 		bool CacheFileToMemory(std::filesystem::path &pathFile)
 		{
+			
+
 			//open file
 			//malloc memory
 			//read file to memory
@@ -90,6 +92,10 @@ private:
 
 	class MemoryMapping
 	{
+
+
+
+
 
 	};
 
