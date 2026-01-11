@@ -41,21 +41,8 @@ do\
 
 int main(void)
 {
-	//先设置为本地化信息为用户环境变量中的默认设置
-	const char *pcLocale = setlocale(LC_ALL, "");
-
-	if (pcLocale != NULL)
-	{
-		std::string strLocale(pcLocale);
-		strLocale.replace(strLocale.find_last_of('.') + 1, strLocale.size(), "UTF-8");
-		pcLocale = setlocale(LC_ALL, strLocale.c_str());
-	}
-
-	//如果上面失败，则设置为预设值
-	if (pcLocale == NULL)//注意这里不是else if，因为上面的if内部有可能重新赋值pcLocale
-	{
-		MyAssert(setlocale(LC_ALL, "en_US.UTF-8"), "setlocale fail");//再次失败触发assert
-	}
+	//设置为UTF8编码
+	MyAssert(setlocale(LC_ALL, ".UTF-8"), "setlocale fail");
 
 	CALL_FUNC_ASSERT(Startup);
 
