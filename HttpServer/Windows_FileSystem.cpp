@@ -2,11 +2,6 @@
 
 #include <Windows.h>
 
-FileSystem::FILE_T FileSystem::GetUnInitFile(void) noexcept
-{
-	return INVALID_HANDLE_VALUE;
-}
-
 ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64FileSize)
 {
 	//打开输入文件并映射
@@ -69,13 +64,92 @@ ErrorMessage UnMapFile(void *&pFileClose)
 	return {};
 }
 
+File::FILE_T File::GetUnInitFile(void) noexcept
+{
+	return INVALID_HANDLE_VALUE;
+}
 
+bool File::IsValid(void) noexcept
+{
+	return fileData != GetUnInitFile();
+}
 
+bool File::Open(const wchar_t *pwcFileName, AccessMode enAccessMode, ShareMode enShareMode, CreationMode enCreationMode) noexcept
+{
+	if (IsValid())
+	{
+		fileError = ERROR_ALREADY_EXISTS;//已存在
+		return false;
+	}
 
+	HANDLE hFile = CreateFileW(pwcFileName, (uint32_t)enAccessMode, (uint32_t)enShareMode, NULL, (uint32_t)enCreationMode, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		fileError = GetLastError();
+		return false;
+	}
 
+	fileData = (FILE_T)hFile;
 
+	return true;
+}
 
+bool File::Close(void) noexcept
+{
+	if (CloseHandle((HANDLE)fileData) == 0)
+	{
+		fileError = GetLastError();
+		return false;
+	}
 
+	return true;
+}
 
+bool File::Read(void *pData, uint32_t &u32Size) noexcept
+{
+	if (ReadFile((HANDLE)fileData, pData, u32Size, (LPDWORD)&u32Size, NULL) == FALSE)
+	{
+		fileError = GetLastError();
+		return false;
+	}
 
+	return true;
+}
+
+bool File::Write(const void *pData, uint32_t &u32Size) noexcept
+{
+	if (WriteFile((HANDLE)fileData, pData, u32Size, (LPDWORD)&u32Size, NULL) == FALSE)
+	{
+		fileError = GetLastError();
+		return false;
+	}
+
+	return true;
+}
+
+bool File::GetPos(int64_t &i64Pos) noexcept
+{
+	LARGE_INTEGER liCurrentPos{};
+
+	if (SetFilePointerEx((HANDLE)fileData, LARGE_INTEGER{ .QuadPart = 0 }, &liCurrentPos, (uint32_t)MoveMethod::CUR) == FALSE)
+	{
+		fileError = GetLastError();
+		return false;
+	}
+
+	i64Pos = liCurrentPos.QuadPart;
+
+	return true;
+}
+
+bool File::SetPos(int64_t i64Pos, MoveMethod enMoveMethod) noexcept
+{
+	if (SetFilePointerEx((HANDLE)fileData, LARGE_INTEGER{ .QuadPart = i64Pos }, NULL, (uint32_t)enMoveMethod) == FALSE)
+	{
+		fileError = GetLastError();
+		return false;
+	}
+
+	return true;
+}
 

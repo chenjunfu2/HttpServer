@@ -4,7 +4,7 @@
 
 #include "CPP_Helper.h"
 
-struct ReadOnlyFile
+struct VirtualFile
 {
 public:
 	struct FileData
@@ -106,16 +106,16 @@ private:
 	MemoryCache cacheFile;
 
 public:
-	ReadOnlyFile(void) :
+	VirtualFile(void) :
 		modeStorage(StorageMode::UNDEFINE),
 		pathFile(),
 		cacheFile()
 	{}
 
-	~ReadOnlyFile(void)
+	~VirtualFile(void)
 	{}
 
-	DELETE_COPY(ReadOnlyFile);
+	DELETE_COPY(VirtualFile);
 
 	GETTER_COPY(StorageMode, modeStorage);
 
@@ -157,7 +157,7 @@ public:
 class VirtualFileSystem
 {
 private:
-	std::unordered_map<std::string, ReadOnlyFile> mapFile;//映射http请求key到实际文件路径path
+	std::unordered_map<std::string, VirtualFile> mapFile;//映射http请求key到实际文件路径path
 
 
 

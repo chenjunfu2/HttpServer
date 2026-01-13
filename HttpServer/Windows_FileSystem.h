@@ -35,14 +35,15 @@ public:
 
 };
 
+class FileMapping;//前向声明
 
-
-class FileSystem
+class File
 {
+	friend class FileMapping;
 public:
 	using FILE_T = void *;
 
-	enum class OpenMode : uint32_t
+	enum class AccessMode : uint32_t
 	{
 		NONE	= 0x00000000,
 		ALL		= 0x10000000,
@@ -51,12 +52,12 @@ public:
 		READ	= 0x80000000,
 	};
 
-	static OpenMode operator|(OpenMode l, OpenMode r)
+	static AccessMode operator|(AccessMode l, AccessMode r)
 	{
-		return (OpenMode)((uint32_t)l | (uint32_t)r);
+		return (AccessMode)((uint32_t)l | (uint32_t)r);
 	}
 
-	enum ShareMode : uint32_t
+	enum class ShareMode : uint32_t
 	{
 		NONE	= 0x00000000,
 		READ	= 0x00000001,
@@ -69,7 +70,7 @@ public:
 		return (ShareMode)((uint32_t)l | (uint32_t)r);
 	}
 
-	enum CreationMode : uint32_t
+	enum class CreationMode : uint32_t
 	{
 		NONE				= 0,
 		CREATE_NEW			= 1,
@@ -79,9 +80,15 @@ public:
 		TRUNCATE_EXISTING	= 5,
 	};
 
+	enum class MoveMethod : uint32_t
+	{
+		BEG = 0,
+		CUR = 1,
+		END = 2,
+	};
+
 protected:
 	static FILE_T GetUnInitFile(void) noexcept;
-
 
 private:
 	FILE_T fileData;
@@ -98,24 +105,75 @@ public:
 		fileError.Clear();
 	}
 
+	File(void) :
+		fileData(GetUnInitFile()),
+		fileError()
+	{}
 
-	DELETE_COPY(FileSystem);
+	~File(void)
+	{
+		Clear();
+	}
+
+	File(File &&_Move) noexcept :
+		fileData(_Move.fileData),
+		fileError(std::move(_Move.fileError))
+	{
+		_Move.fileData = GetUnInitFile();
+	}
+
+	File &operator=(File &&_Move) noexcept
+	{
+		Clear();
+
+		fileData = _Move.fileData;
+		fileError = std::move(_Move.fileError);
+
+		_Move.fileData = GetUnInitFile();;
+
+		return *this;
+	}
+
+	DELETE_COPY(File);
 	GETTER_COPY(FileError, fileError);
 	GETTER_COPY(FileRaw, fileData);
 
 	bool IsValid(void) noexcept;
 
-	bool Open(const char *pcFileName, OpenMode enOpenMode, ShareMode enShareMode) noexcept;
+	bool Open(const wchar_t *pwcFileName, AccessMode enAccessMode, ShareMode enShareMode, CreationMode enCreationMode) noexcept;
 	bool Close(void) noexcept;
 
-	bool Read(void *pData, size_t szSize) noexcept;
-	bool Write(const void *pData, size_t szSize) noexcept;
+	bool Read(void *pData, uint32_t &u32Size) noexcept;
+	bool Write(const void *pData, uint32_t &u32Size) noexcept;
 
-	bool GetPos(size_t &szPos) noexcept;
-	bool SetPos(size_t szPos) noexcept;
-
-	bool Map(const void *&pFileData) noexcept;
-	bool UnMap(const void *&pFileData) noexcept;
+	bool GetPos(int64_t &i64Pos) noexcept;
+	bool SetPos(int64_t i64Pos, MoveMethod enMoveMethod) noexcept;
 
 };
+
+class FileMapping
+{
+public:
+	class MemoryFile//持有映射指针，析构释放
+	{
+
+
+
+
+	};
+
+
+public:
+	//通过File对象创建
+
+
+
+
+
+
+
+
+};
+
+
 
