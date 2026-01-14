@@ -66,6 +66,20 @@ SystemError UnMapFile(void *&pFileClose)
 }
 */
 
+FileError::ErrorCode FileError::MapFileError(uint32_t u32ErrorCode)
+{
+	switch (u32ErrorCode)
+	{
+	case ERROR_FILE_NOT_FOUND:	return ErrorCode::NO_FOUND;
+	case ERROR_ACCESS_DENIED:	return ErrorCode::ACCESS_DENIED;
+	case ERROR_ALREADY_EXISTS:	//与下个相同
+	case ERROR_FILE_EXISTS:		return ErrorCode::ALREADY_EXISTS;
+
+	default:					return ErrorCode::OTHER_ERR;
+	}
+}
+
+
 SystemError File::MemoryView::Close(void) noexcept
 {
 	if (UnmapViewOfFile(pViewData) == FALSE)
@@ -95,9 +109,9 @@ bool File::Open(const wchar_t *pwcFileName, AccessMode enAccessMode, ShareMode e
 	}
 
 	HANDLE hFile = CreateFileW(pwcFileName, (uint32_t)enAccessMode, (uint32_t)enShareMode, NULL, (uint32_t)enCreationMode, FILE_ATTRIBUTE_NORMAL, NULL);
+	fileError = GetLastError();//注意哪怕没出错也要保留错误码，因为文件打开模式会可能会成功并设置错误码。
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		fileError = GetLastError();
 		return false;
 	}
 

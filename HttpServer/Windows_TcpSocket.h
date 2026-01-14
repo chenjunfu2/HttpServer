@@ -11,7 +11,7 @@ class SocketError : public SystemError
 public:
 	using Base = SystemError;
 
-	enum ErrorCode :uint8_t
+	enum class ErrorCode : uint32_t
 	{
 		NO_ERR = 0,			//无错误
 

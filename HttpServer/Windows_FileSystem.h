@@ -11,9 +11,15 @@ class FileError : public SystemError
 public:
 	using Base = SystemError;
 
-	enum ErrorCode
+	enum class ErrorCode : uint32_t
 	{
-		NO_ERR = 0,			//无错误
+		NO_ERR = 0,			//NO_ERROR 无错误
+		NO_FOUND,			//ERROR_FILE_NOT_FOUND
+		ACCESS_DENIED,		//ERROR_ACCESS_DENIED
+		ALREADY_EXISTS,		//ERROR_ALREADY_EXISTS or ERROR_FILE_EXISTS
+
+		OTHER_ERR,			//其它错误
+		ENUM_END,			//enum结束标记
 	};
 
 protected:
