@@ -2,13 +2,14 @@
 
 #include <Windows.h>
 
-ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64FileSize)
+/*
+SystemError MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64FileSize)
 {
 	//打开输入文件并映射
 	HANDLE hReadFile = CreateFileW(pwcFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hReadFile == INVALID_HANDLE_VALUE)
 	{
-		return ErrorMessage(GetLastError());
+		return SystemError(GetLastError());
 	}
 
 	//获得文件大小
@@ -17,7 +18,7 @@ ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64
 	{
 		auto dwLastError = GetLastError();
 		CloseHandle(hReadFile);//关闭输入文件
-		return ErrorMessage(dwLastError);
+		return SystemError(dwLastError);
 	}
 
 	//通过参数返回
@@ -29,7 +30,7 @@ ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64
 	{
 		auto dwLastError = GetLastError();
 		CloseHandle(hReadFile);//关闭输入文件
-		return ErrorMessage(dwLastError);
+		return SystemError(dwLastError);
 	}
 	CloseHandle(hReadFile);//关闭输入文件
 
@@ -39,7 +40,7 @@ ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64
 	{
 		auto dwLastError = GetLastError();
 		CloseHandle(hFileMapping);//关闭文件映射对象  注：此处不用关闭输入文件，前面已经关闭过了
-		return ErrorMessage(dwLastError);
+		return SystemError(dwLastError);
 	}
 	CloseHandle(hFileMapping);//关闭文件映射对象
 
@@ -53,14 +54,25 @@ ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64
 	return {};
 }
 
-ErrorMessage UnMapFile(void *&pFileClose)
+SystemError UnMapFile(void *&pFileClose)
 {
 	if (!UnmapViewOfFile(pFileClose))
 	{
-		return ErrorMessage(GetLastError());
+		return SystemError(GetLastError());
 	}
 
 	pFileClose = NULL;
+	return {};
+}
+*/
+
+SystemError File::MemoryView::Close(void) noexcept
+{
+	if (UnmapViewOfFile(pViewData) == FALSE)
+	{
+		return SystemError(GetLastError());
+	}
+
 	return {};
 }
 
@@ -152,4 +164,56 @@ bool File::SetPos(int64_t i64Pos, MoveMethod enMoveMethod) noexcept
 
 	return true;
 }
+
+bool File::GetSize(int64_t &i64Size) noexcept
+{
+	LARGE_INTEGER liFileSize{};
+
+	if (GetFileSizeEx((HANDLE)fileData, &liFileSize) == FALSE)
+	{
+		fileError = GetLastError();
+		return false;
+	}
+
+	i64Size = liFileSize.QuadPart;
+
+	return true;
+}
+
+
+bool File::MappingToMemoryView(MemoryView &fileMemoryView) noexcept
+{
+	int64_t i64FileSize{};
+	if (!GetSize(i64FileSize))//内部设置错误码，无需重复设置
+	{
+		return false;
+	}
+
+	//创建文件映射对象
+	HANDLE hFileMapping = CreateFileMappingW((HANDLE)fileData, NULL, PAGE_READONLY, 0, 0, NULL);
+	if (hFileMapping == NULL)
+	{
+		fileError = GetLastError();
+		return false;
+	}
+
+	//映射文件到内存
+	LPVOID lpViewMemory = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);//具体关闭实现由MemoryView类完成
+	if (lpViewMemory == NULL)
+	{
+		fileError = GetLastError();
+		CloseHandle(hFileMapping);//关闭映射对象
+		return false;
+	}
+	CloseHandle(hFileMapping);//关闭映射对象
+
+	//仅保留指针
+	fileMemoryView.SetViewData(lpViewMemory);
+	fileMemoryView.SetViewSize(i64FileSize);
+
+	return true;
+}
+
+
+
 

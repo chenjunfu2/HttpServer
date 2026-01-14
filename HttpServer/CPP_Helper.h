@@ -117,16 +117,16 @@ typename std::remove_reference_t<decltype(member_name)> Get##func_name(void) con
 
 //设置-拷贝
 #define SETTER_COPY(func_name, member_name)\
-void Set##func_name(const typename std::remove_reference_t<decltype(member_name)> &_member_name)\
+void Set##func_name(const typename std::remove_reference_t<decltype(member_name)> &_##member_name)\
 {\
-	member_name = _member_name;\
+	member_name = _##member_name;\
 }
 
 //设置-移动
 #define SETTER_MOVE(func_name, member_name)\
-void Set##func_name(typename std::remove_reference_t<decltype(member_name)> &&_member_name) noexcept\
+void Set##func_name(typename std::remove_reference_t<decltype(member_name)> &&_##member_name) noexcept\
 {\
-	member_name = std::move(_member_name);\
+	member_name = std::move(_##member_name);\
 }
 
 //获取-引用与常量引用

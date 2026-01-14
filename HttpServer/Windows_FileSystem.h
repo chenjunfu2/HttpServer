@@ -6,11 +6,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-
-ErrorMessage MappingFile(const wchar_t *pwcFileName, void *&pFile, uint64_t &u64FileSize);
-ErrorMessage UnMapFile(void *&pFileClose);
-
-
 class FileError : public SystemError
 {
 public:
@@ -18,7 +13,7 @@ public:
 
 	enum ErrorCode
 	{
-
+		NO_ERR = 0,			//无错误
 	};
 
 protected:
@@ -35,11 +30,8 @@ public:
 
 };
 
-class FileMapping;//前向声明
-
 class File
 {
-	friend class FileMapping;
 public:
 	using FILE_T = void *;
 
@@ -85,6 +77,74 @@ public:
 		BEG = 0,
 		CUR = 1,
 		END = 2,
+	};
+
+
+	class MemoryView//持有映射指针，析构释放
+	{
+		friend class File;
+	private:
+		const void *pViewData;
+		int64_t i64ViewSize;
+
+	protected:
+		SETTER_COPY(ViewData, pViewData);
+		SETTER_COPY(ViewSize, i64ViewSize);
+
+	public:
+		void Clear(void) noexcept
+		{
+			if (IsValid())
+			{
+				Close();
+			}
+
+			pViewData = NULL;
+			i64ViewSize = 0;
+		}
+
+		MemoryView(void) :
+			pViewData(NULL),
+			i64ViewSize(0)
+		{}
+
+		~MemoryView(void)
+		{
+			Clear();
+		}
+
+		DELETE_COPY(MemoryView);
+		
+		MemoryView(MemoryView &&_Move):
+			pViewData(_Move.pViewData),
+			i64ViewSize(_Move.i64ViewSize)
+		{
+			_Move.pViewData = NULL;
+			_Move.i64ViewSize = 0;
+		}
+
+		MemoryView &operator=(MemoryView &&_Move)
+		{
+			Clear();
+
+			pViewData = _Move.pViewData;
+			i64ViewSize = _Move.i64ViewSize;
+
+			_Move.pViewData = NULL;
+			_Move.i64ViewSize = 0;
+
+			return *this;
+		}
+
+		GETTER_COPY(ViewData, pViewData);
+		GETTER_COPY(ViewSize, i64ViewSize);
+
+		bool IsValid(void) const noexcept
+		{
+			return pViewData != NULL;
+		}
+
+		SystemError Close(void) noexcept;
 	};
 
 protected:
@@ -149,31 +209,10 @@ public:
 	bool GetPos(int64_t &i64Pos) noexcept;
 	bool SetPos(int64_t i64Pos, MoveMethod enMoveMethod) noexcept;
 
-};
+	bool GetSize(int64_t &i64Size) noexcept;
 
-class FileMapping
-{
-public:
-	class MemoryFile//持有映射指针，析构释放
-	{
-
-
-
-
-	};
-
-
-public:
-	//通过File对象创建
-
-
-
-
-
-
-
+	bool MappingToMemoryView(MemoryView &fileMemoryView) noexcept;
 
 };
-
 
 

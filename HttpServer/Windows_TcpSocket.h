@@ -13,7 +13,7 @@ public:
 
 	enum ErrorCode :uint8_t
 	{
-		NO_ERR = 0,		//无错误
+		NO_ERR = 0,			//无错误
 
 		NOT_INITIALIZED,    //WSANOTINITIALISED Winsock未初始化
 		NOT_SOCKET,			//WSAENOTSOCK 尝试对不是套接字的内容执行操作
