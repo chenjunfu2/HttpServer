@@ -50,7 +50,7 @@ public:
 		READ	= 0x80000000,
 	};
 
-	static AccessMode operator|(AccessMode l, AccessMode r)
+	AccessMode friend operator|(AccessMode l, AccessMode r)
 	{
 		return (AccessMode)((uint32_t)l | (uint32_t)r);
 	}
@@ -63,7 +63,7 @@ public:
 		DELETE	= 0x00000004,
 	};
 
-	static ShareMode operator|(ShareMode l, ShareMode r)
+	ShareMode friend operator|(ShareMode l, ShareMode r)
 	{
 		return (ShareMode)((uint32_t)l | (uint32_t)r);
 	}

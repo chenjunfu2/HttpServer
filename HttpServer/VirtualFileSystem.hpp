@@ -106,16 +106,6 @@ private:
 
 	};
 
-	class MemoryMapping
-	{
-
-
-
-
-
-	};
-
-
 private:
 	StorageMode enStorageMode;
 	std::filesystem::path pathFile;
@@ -137,7 +127,7 @@ public:
 
 	GETTER_CREF(FilePath, pathFile);
 
-	const void *GetFileData(void) const noexcept
+	const void *GetData(void) const noexcept
 	{
 		switch (enStorageMode)
 		{
@@ -153,7 +143,7 @@ public:
 		}
 
 	}
-	int64_t GetFileSize(void) const noexcept
+	int64_t GetSize(void) const noexcept
 	{
 		switch (enStorageMode)
 		{
@@ -234,14 +224,46 @@ private:
 
 public:
 	DELETE_COPY(VirtualFileSystem);
+	DEFAULT_CSTC(VirtualFileSystem);
+	DEFAULT_DSTC(VirtualFileSystem);
 
+	VirtualFileSystem(VirtualFileSystem &&_Move) :
+		mapFile(std::move(_Move.mapFile))
+	{}
 
+	VirtualFileSystem &operator=(VirtualFileSystem &&_Move)
+	{
+		mapFile = std::move(_Move.mapFile);
+	}
 
+	void Register(std::string strHttpPath, std::filesystem::path pathFileSystem)
+	{
+		mapFile.insert_or_assign(std::move(strHttpPath), std::move(pathFileSystem));
+	}
 
+	void UnRegister(const std::string &strHttpPath)
+	{
+		mapFile.erase(strHttpPath);
+	}
 
+	void Load(int64_t i64MemCacheMaxSize)
+	{
+		for (auto &[key, val] : mapFile)
+		{
+			val.Flush(i64MemCacheMaxSize);
+		}
+	}
+
+	VirtualFile *GetFile(const std::string &strHttpPath)
+	{
+		auto it = mapFile.find(strHttpPath);
+		if (it == mapFile.end())
+		{
+			return NULL;
+		}
+
+		return &(it->second);
+	}
 
 };
-
-
-
 
