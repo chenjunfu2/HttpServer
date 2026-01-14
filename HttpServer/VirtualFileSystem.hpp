@@ -109,12 +109,31 @@ private:
 private:
 	StorageMode enStorageMode;
 	std::filesystem::path pathFile;
+	std::string strMimeType;
 	std::variant<std::monostate, MemoryCache, File::MemoryView> cacheFile;
+
+protected:
+	//static std::string GetMimeType(std::filesystem::path &p)
+	//{
+	//	auto u8Str = p.extension().u8string();
+	//	
+	//
+	//
+	//
+	//}
 
 public:
 	VirtualFile(void) :
 		enStorageMode(StorageMode::UNDEFINE),
 		pathFile(),
+		strMimeType(),
+		cacheFile()
+	{}
+
+	VirtualFile(std::filesystem::path _pathFile, std::string _strMimeType) :
+		enStorageMode(StorageMode::DISK_ONLY),
+		pathFile(std::move(_pathFile)),
+		strMimeType(std::move(_strMimeType)),
 		cacheFile()
 	{}
 
@@ -159,17 +178,18 @@ public:
 		}
 	}
 
-	void SetFilePath(std::filesystem::path &pathNew)
-	{
-		if (enStorageMode == StorageMode::MEMORY_CACHED ||
-			enStorageMode == StorageMode::MEMORY_MAPPED)
-		{
-			cacheFile.emplace<std::monostate>();//析构原先对象
-		}
-
-		pathFile = pathNew;
-		enStorageMode = StorageMode::DISK_ONLY;
-	}
+	//void SetFilePath(std::filesystem::path &pathNew)
+	//{
+	//	if (enStorageMode == StorageMode::MEMORY_CACHED ||
+	//		enStorageMode == StorageMode::MEMORY_MAPPED)
+	//	{
+	//		cacheFile.emplace<std::monostate>();//析构原先对象
+	//	}
+	//
+	//	pathFile = pathNew;
+	//	strMimeType = GetMimeType(pathFile);
+	//	enStorageMode = StorageMode::DISK_ONLY;
+	//}
 
 	SystemError Flush(int64_t i64MemCacheMaxSize)
 	{
@@ -236,9 +256,9 @@ public:
 		mapFile = std::move(_Move.mapFile);
 	}
 
-	void Register(std::string strHttpPath, std::filesystem::path pathFileSystem)
+	void Register(std::string strHttpPath, std::filesystem::path pathFileSystem, std::string strMimeType)
 	{
-		mapFile.insert_or_assign(std::move(strHttpPath), std::move(pathFileSystem));
+		mapFile.insert_or_assign(std::move(strHttpPath), VirtualFile{ std::move(pathFileSystem), std::move(strMimeType) });
 	}
 
 	void UnRegister(const std::string &strHttpPath)

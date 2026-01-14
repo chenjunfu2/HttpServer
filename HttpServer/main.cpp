@@ -91,6 +91,15 @@ int main(void)
 			MyAssert(fwrite(charArrRecvData, sizeof(charArrRecvData[0]), u32BufferSize, stdout) == u32BufferSize);
 			printf("\n] Recv End\n\n");
 
+			//请求头：收到\r\n\r\n即为结束
+			//限制：1kb，如果没找到结束，请求头过大，直接拒绝
+			//超时：暂时不做，偷懒ing
+
+
+
+
+
+
 			u32BufferSize = sizeof(rsp) - 1;
 			bool bClientClose = false;
 			if (!sockclient.SendAll(rsp, u32BufferSize, bClientClose))
@@ -113,3 +122,4 @@ int main(void)
 	CALL_FUNC_ASSERT(sockServer, Close);
 	return 0;
 }
+
