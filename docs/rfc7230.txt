@@ -1,0 +1,1273 @@
+
+
+
+
+
+
+Internet Engineering Task Force (IETF)                  R. Fielding, Ed.
+Request for Comments: 7230                                         Adobe
+Obsoletes: 2145, 2616                                    J. Reschke, Ed.
+Updates: 2817, 2818                                           greenbytes
+Category: Standards Track                                      June 2014
+ISSN: 2070-1721
+
+
+   Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing
+
+Abstract
+
+   The Hypertext Transfer Protocol (HTTP) is a stateless application-
+   level protocol for distributed, collaborative, hypertext information
+   systems.  This document provides an overview of HTTP architecture and
+   its associated terminology, defines the "http" and "https" Uniform
+   Resource Identifier (URI) schemes, defines the HTTP/1.1 message
+   syntax and parsing requirements, and describes related security
+   concerns for implementations.
+
+Status of This Memo
+
+   This is an Internet Standards Track document.
+
+   This document is a product of the Internet Engineering Task Force
+   (IETF).  It represents the consensus of the IETF community.  It has
+   received public review and has been approved for publication by the
+   Internet Engineering Steering Group (IESG).  Further information on
+   Internet Standards is available in Section 2 of RFC 5741.
+
+   Information about the current status of this document, any errata,
+   and how to provide feedback on it may be obtained at
+   http://www.rfc-editor.org/info/rfc7230.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Fielding & Reschke           Standards Track                    [Page 1]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+Copyright Notice
+
+   Copyright (c) 2014 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (http://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in Section 4.e of
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+   This document may contain material from IETF Documents or IETF
+   Contributions published or made publicly available before November
+   10, 2008.  The person(s) controlling the copyright in some of this
+   material may not have granted the IETF Trust the right to allow
+   modifications of such material outside the IETF Standards Process.
+   Without obtaining an adequate license from the person(s) controlling
+   the copyright in such materials, this document may not be modified
+   outside the IETF Standards Process, and derivative works of it may
+   not be created outside the IETF Standards Process, except to format
+   it for publication as an RFC or to translate it into languages other
+   than English.
+
+Table of Contents
+
+   1. Introduction ....................................................5
+      1.1. Requirements Notation ......................................6
+      1.2. Syntax Notation ............................................6
+   2. Architecture ....................................................6
+      2.1. Client/Server Messaging ....................................7
+      2.2. Implementation Diversity ...................................8
+      2.3. Intermediaries .............................................9
+      2.4. Caches ....................................................11
+      2.5. Conformance and Error Handling ............................12
+      2.6. Protocol Versioning .......................................13
+      2.7. Uniform Resource Identifiers ..............................16
+           2.7.1. http URI Scheme ....................................17
+           2.7.2. https URI Scheme ...................................18
+           2.7.3. http and https URI Normalization and Comparison ....19
+   3. Message Format .................................................19
+      3.1. Start Line ................................................20
+           3.1.1. Request Line .......................................21
+           3.1.2. Status Line ........................................22
+      3.2. Header Fields .............................................22
+
+
+
+Fielding & Reschke           Standards Track                    [Page 2]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+           3.2.1. Field Extensibility ................................23
+           3.2.2. Field Order ........................................23
+           3.2.3. Whitespace .........................................24
+           3.2.4. Field Parsing ......................................25
+           3.2.5. Field Limits .......................................26
+           3.2.6. Field Value Components .............................27
+      3.3. Message Body ..............................................28
+           3.3.1. Transfer-Encoding ..................................28
+           3.3.2. Content-Length .....................................30
+           3.3.3. Message Body Length ................................32
+      3.4. Handling Incomplete Messages ..............................34
+      3.5. Message Parsing Robustness ................................34
+   4. Transfer Codings ...............................................35
+      4.1. Chunked Transfer Coding ...................................36
+           4.1.1. Chunk Extensions ...................................36
+           4.1.2. Chunked Trailer Part ...............................37
+           4.1.3. Decoding Chunked ...................................38
+      4.2. Compression Codings .......................................38
+           4.2.1. Compress Coding ....................................38
+           4.2.2. Deflate Coding .....................................38
+           4.2.3. Gzip Coding ........................................39
+      4.3. TE ........................................................39
+      4.4. Trailer ...................................................40
+   5. Message Routing ................................................40
+      5.1. Identifying a Target Resource .............................40
+      5.2. Connecting Inbound ........................................41
+      5.3. Request Target ............................................41
+           5.3.1. origin-form ........................................42
+           5.3.2. absolute-form ......................................42
+           5.3.3. authority-form .....................................43
+           5.3.4. asterisk-form ......................................43
+      5.4. Host ......................................................44
+      5.5. Effective Request URI .....................................45
+      5.6. Associating a Response to a Request .......................46
+      5.7. Message Forwarding ........................................47
+           5.7.1. Via ................................................47
+           5.7.2. Transformations ....................................49
+   6. Connection Management ..........................................50
+      6.1. Connection ................................................51
+      6.2. Establishment .............................................52
+      6.3. Persistence ...............................................52
+           6.3.1. Retrying Requests ..................................53
+           6.3.2. Pipelining .........................................54
+      6.4. Concurrency ...............................................55
+      6.5. Failures and Timeouts .....................................55
+      6.6. Tear-down .................................................56
+      6.7. Upgrade ...................................................57
+   7. ABNF List Extension: #rule .....................................59
+
+
+
+Fielding & Reschke           Standards Track                    [Page 3]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   8. IANA Considerations ............................................61
+      8.1. Header Field Registration .................................61
+      8.2. URI Scheme Registration ...................................62
+      8.3. Internet Media Type Registration ..........................62
+           8.3.1. Internet Media Type message/http ...................62
+           8.3.2. Internet Media Type application/http ...............63
+      8.4. Transfer Coding Registry ..................................64
+           8.4.1. Procedure ..........................................65
+           8.4.2. Registration .......................................65
+      8.5. Content Coding Registration ...............................66
+      8.6. Upgrade Token Registry ....................................66
+           8.6.1. Procedure ..........................................66
+           8.6.2. Upgrade Token Registration .........................67
+   9. Security Considerations ........................................67
+      9.1. Establishing Authority ....................................67
+      9.2. Risks of Intermediaries ...................................68
+      9.3. Attacks via Protocol Element Length .......................69
+      9.4. Response Splitting ........................................69
+      9.5. Request Smuggling .........................................70
+      9.6. Message Integrity .........................................70
+      9.7. Message Confidentiality ...................................71
+      9.8. Privacy of Server Log Information .........................71
+   10. Acknowledgments ...............................................72
+   11. References ....................................................74
+      11.1. Normative References .....................................74
+      11.2. Informative References ...................................75
+   Appendix A. HTTP Version History ..................................78
+      A.1. Changes from HTTP/1.0  ....................................78
+           A.1.1.  Multihomed Web Servers ............................78
+           A.1.2.  Keep-Alive Connections ............................79
+           A.1.3.  Introduction of Transfer-Encoding .................79
+      A.2.  Changes from RFC 2616 ....................................80
+   Appendix B. Collected ABNF ........................................82
+   Index .............................................................85
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Fielding & Reschke           Standards Track                    [Page 4]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+1.  Introduction
+
+   The Hypertext Transfer Protocol (HTTP) is a stateless application-
+   level request/response protocol that uses extensible semantics and
+   self-descriptive message payloads for flexible interaction with
+   network-based hypertext information systems.  This document is the
+   first in a series of documents that collectively form the HTTP/1.1
+   specification:
+
+   1.  "Message Syntax and Routing" (this document)
+
+   2.  "Semantics and Content" [RFC7231]
+
+   3.  "Conditional Requests" [RFC7232]
+
+   4.  "Range Requests" [RFC7233]
+
+   5.  "Caching" [RFC7234]
+
+   6.  "Authentication" [RFC7235]
+
+   This HTTP/1.1 specification obsoletes RFC 2616 and RFC 2145 (on HTTP
+   versioning).  This specification also updates the use of CONNECT to
+   establish a tunnel, previously defined in RFC 2817, and defines the
+   "https" URI scheme that was described informally in RFC 2818.
+
+   HTTP is a generic interface protocol for information systems.  It is
+   designed to hide the details of how a service is implemented by
+   presenting a uniform interface to clients that is independent of the
+   types of resources provided.  Likewise, servers do not need to be
+   aware of each client's purpose: an HTTP request can be considered in
+   isolation rather than being associated with a specific type of client
+   or a predetermined sequence of application steps.  The result is a
+   protocol that can be used effectively in many different contexts and
+   for which implementations can evolve independently over time.
+
+   HTTP is also designed for use as an intermediation protocol for
+   translating communication to and from non-HTTP information systems.
+   HTTP proxies and gateways can provide access to alternative
+   information services by translating their diverse protocols into a
+   hypertext format that can be viewed and manipulated by clients in the
+   same way as HTTP services.
+
+   One consequence of this flexibility is that the protocol cannot be
+   defined in terms of what occurs behind the interface.  Instead, we
+   are limited to defining the syntax of communication, the intent of
+   received communication, and the expected behavior of recipients.  If
+   the communication is considered in isolation, then successful actions
+
+
+
+Fielding & Reschke           Standards Track                    [Page 5]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   ought to be reflected in corresponding changes to the observable
+   interface provided by servers.  However, since multiple clients might
+   act in parallel and perhaps at cross-purposes, we cannot require that
+   such changes be observable beyond the scope of a single response.
+
+   This document describes the architectural elements that are used or
+   referred to in HTTP, defines the "http" and "https" URI schemes,
+   describes overall network operation and connection management, and
+   defines HTTP message framing and forwarding requirements.  Our goal
+   is to define all of the mechanisms necessary for HTTP message
+   handling that are independent of message semantics, thereby defining
+   the complete set of requirements for message parsers and message-
+   forwarding intermediaries.
+
+1.1.  Requirements Notation
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+   Conformance criteria and considerations regarding error handling are
+   defined in Section 2.5.
+
+1.2.  Syntax Notation
+
+   This specification uses the Augmented Backus-Naur Form (ABNF)
+   notation of [RFC5234] with a list extension, defined in Section 7,
+   that allows for compact definition of comma-separated lists using a
+   '#' operator (similar to how the '*' operator indicates repetition).
+   Appendix B shows the collected grammar with all list operators
+   expanded to standard ABNF notation.
+
+   The following core rules are included by reference, as defined in
+   [RFC5234], Appendix B.1: ALPHA (letters), CR (carriage return), CRLF
+   (CR LF), CTL (controls), DIGIT (decimal 0-9), DQUOTE (double quote),
+   HEXDIG (hexadecimal 0-9/A-F/a-f), HTAB (horizontal tab), LF (line
+   feed), OCTET (any 8-bit sequence of data), SP (space), and VCHAR (any
+   visible [USASCII] character).
+
+   As a convention, ABNF rule names prefixed with "obs-" denote
+   "obsolete" grammar rules that appear for historical reasons.
+
+2.  Architecture
+
+   HTTP was created for the World Wide Web (WWW) architecture and has
+   evolved over time to support the scalability needs of a worldwide
+   hypertext system.  Much of that architecture is reflected in the
+   terminology and syntax productions used to define HTTP.
+
+
+
+Fielding & Reschke           Standards Track                    [Page 6]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+2.1.  Client/Server Messaging
+
+   HTTP is a stateless request/response protocol that operates by
+   exchanging messages (Section 3) across a reliable transport- or
+   session-layer "connection" (Section 6).  An HTTP "client" is a
+   program that establishes a connection to a server for the purpose of
+   sending one or more HTTP requests.  An HTTP "server" is a program
+   that accepts connections in order to service HTTP requests by sending
+   HTTP responses.
+
+   The terms "client" and "server" refer only to the roles that these
+   programs perform for a particular connection.  The same program might
+   act as a client on some connections and a server on others.  The term
+   "user agent" refers to any of the various client programs that
+   initiate a request, including (but not limited to) browsers, spiders
+   (web-based robots), command-line tools, custom applications, and
+   mobile apps.  The term "origin server" refers to the program that can
+   originate authoritative responses for a given target resource.  The
+   terms "sender" and "recipient" refer to any implementation that sends
+   or receives a given message, respectively.
+
+   HTTP relies upon the Uniform Resource Identifier (URI) standard
+   [RFC3986] to indicate the target resource (Section 5.1) and
+   relationships between resources.  Messages are passed in a format
+   similar to that used by Internet mail [RFC5322] and the Multipurpose
+   Internet Mail Extensions (MIME) [RFC2045] (see Appendix A of
+   [RFC7231] for the differences between HTTP and MIME messages).
+
+   Most HTTP communication consists of a retrieval request (GET) for a
+   representation of some resource identified by a URI.  In the simplest
+   case, this might be accomplished via a single bidirectional
+   connection (===) between the user agent (UA) and the origin
+   server (O).
+
+            request   >
+       UA ======================================= O
+                                   <   response
+
+   A client sends an HTTP request to a server in the form of a request
+   message, beginning with a request-line that includes a method, URI,
+   and protocol version (Section 3.1.1), followed by header fields
+   containing request modifiers, client information, and representation
+   metadata (Section 3.2), an empty line to indicate the end of the
+   header section, and finally a message body containing the payload
+   body (if any, Section 3.3).
+
+
+
+
+
+
+Fielding & Reschke           Standards Track                    [Page 7]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   A server responds to a client's request by sending one or more HTTP
+   response messages, each beginning with a status line that includes
+   the protocol version, a success or error code, and textual reason
+   phrase (Section 3.1.2), possibly followed by header fields containing
+   server information, resource metadata, and representation metadata
+   (Section 3.2), an empty line to indicate the end of the header
+   section, and finally a message body containing the payload body (if
+   any, Section 3.3).
+
+   A connection might be used for multiple request/response exchanges,
+   as defined in Section 6.3.
+
+   The following example illustrates a typical message exchange for a
+   GET request (Section 4.3.1 of [RFC7231]) on the URI
+   "http://www.example.com/hello.txt":
+
+   Client request:
+
+     GET /hello.txt HTTP/1.1
+     User-Agent: curl/7.16.3 libcurl/7.16.3 OpenSSL/0.9.7l zlib/1.2.3
+     Host: www.example.com
+     Accept-Language: en, mi
+
+
+   Server response:
+
+     HTTP/1.1 200 OK
+     Date: Mon, 27 Jul 2009 12:28:53 GMT
+     Server: Apache
+     Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT
+     ETag: "34aa387-d-1568eb00"
+     Accept-Ranges: bytes
+     Content-Length: 51
+     Vary: Accept-Encoding
+     Content-Type: text/plain
+
+     Hello World! My payload includes a trailing CRLF.
+
+2.2.  Implementation Diversity
+
+   When considering the design of HTTP, it is easy to fall into a trap
+   of thinking that all user agents are general-purpose browsers and all
+   origin servers are large public websites.  That is not the case in
+   practice.  Common HTTP user agents include household appliances,
+   stereos, scales, firmware update scripts, command-line programs,
+   mobile apps, and communication devices in a multitude of shapes and
+   sizes.  Likewise, common HTTP origin servers include home automation
+
+
+
+
+Fielding & Reschke           Standards Track                    [Page 8]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   units, configurable networking components, office machines,
+   autonomous robots, news feeds, traffic cameras, ad selectors, and
+   video-delivery platforms.
+
+   The term "user agent" does not imply that there is a human user
+   directly interacting with the software agent at the time of a
+   request.  In many cases, a user agent is installed or configured to
+   run in the background and save its results for later inspection (or
+   save only a subset of those results that might be interesting or
+   erroneous).  Spiders, for example, are typically given a start URI
+   and configured to follow certain behavior while crawling the Web as a
+   hypertext graph.
+
+   The implementation diversity of HTTP means that not all user agents
+   can make interactive suggestions to their user or provide adequate
+   warning for security or privacy concerns.  In the few cases where
+   this specification requires reporting of errors to the user, it is
+   acceptable for such reporting to only be observable in an error
+   console or log file.  Likewise, requirements that an automated action
+   be confirmed by the user before proceeding might be met via advance
+   configuration choices, run-time options, or simple avoidance of the
+   unsafe action; confirmation does not imply any specific user
+   interface or interruption of normal processing if the user has
+   already made that choice.
+
+2.3.  Intermediaries
+
+   HTTP enables the use of intermediaries to satisfy requests through a
+   chain of connections.  There are three common forms of HTTP
+   intermediary: proxy, gateway, and tunnel.  In some cases, a single
+   intermediary might act as an origin server, proxy, gateway, or
+   tunnel, switching behavior based on the nature of each request.
+
+            >             >             >             >
+       UA =========== A =========== B =========== C =========== O
+                  <             <             <             <
+
+   The figure above shows three intermediaries (A, B, and C) between the
+   user agent and origin server.  A request or response message that
+   travels the whole chain will pass through four separate connections.
+   Some HTTP communication options might apply only to the connection
+   with the nearest, non-tunnel neighbor, only to the endpoints of the
+   chain, or to all connections along the chain.  Although the diagram
+   is linear, each participant might be engaged in multiple,
+   simultaneous communications.  For example, B might be receiving
+   requests from many clients other than A, and/or forwarding requests
+   to servers other than C, at the same time that it is handling A's
+
+
+
+
+Fielding & Reschke           Standards Track                    [Page 9]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   request.  Likewise, later requests might be sent through a different
+   path of connections, often based on dynamic configuration for load
+   balancing.
+
+   The terms "upstream" and "downstream" are used to describe
+   directional requirements in relation to the message flow: all
+   messages flow from upstream to downstream.  The terms "inbound" and
+   "outbound" are used to describe directional requirements in relation
+   to the request route: "inbound" means toward the origin server and
+   "outbound" means toward the user agent.
+
+   A "proxy" is a message-forwarding agent that is selected by the
+   client, usually via local configuration rules, to receive requests
+   for some type(s) of absolute URI and attempt to satisfy those
+   requests via translation through the HTTP interface.  Some
+   translations are minimal, such as for proxy requests for "http" URIs,
+   whereas other requests might require translation to and from entirely
+   different application-level protocols.  Proxies are often used to
+   group an organization's HTTP requests through a common intermediary
+   for the sake of security, annotation services, or shared caching.
+   Some proxies are designed to apply transformations to selected
+   messages or payloads while they are being forwarded, as described in
+   Section 5.7.2.
+
+   A "gateway" (a.k.a. "reverse proxy") is an intermediary that acts as
+   an origin server for the outbound connection but translates received
+   requests and forwards them inbound to another server or servers.
+   Gateways are often used to encapsulate legacy or untrusted
+   information services, to improve server performance through
+   "accelerator" caching, and to enable partitioning or load balancing
+   of HTTP services across multiple machines.
+
+   All HTTP requirements applicable to an origin server also apply to
+   the outbound communication of a gateway.  A gateway communicates with
+   inbound servers using any protocol that it desires, including private
+   extensions to HTTP that are outside the scope of this specification.
+   However, an HTTP-to-HTTP gateway that wishes to interoperate with
+   third-party HTTP servers ought to conform to user agent requirements
+   on the gateway's inbound connection.
+
+   A "tunnel" acts as a blind relay between two connections without
+   changing the messages.  Once active, a tunnel is not considered a
+   party to the HTTP communication, though the tunnel might have been
+   initiated by an HTTP request.  A tunnel ceases to exist when both
+   ends of the relayed connection are closed.  Tunnels are used to
+   extend a virtual connection through an intermediary, such as when
+   Transport Layer Security (TLS, [RFC5246]) is used to establish
+   confidential communication through a shared firewall proxy.
+
+
+
+Fielding & Reschke           Standards Track                   [Page 10]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   The above categories for intermediary only consider those acting as
+   participants in the HTTP communication.  There are also
+   intermediaries that can act on lower layers of the network protocol
+   stack, filtering or redirecting HTTP traffic without the knowledge or
+   permission of message senders.  Network intermediaries are
+   indistinguishable (at a protocol level) from a man-in-the-middle
+   attack, often introducing security flaws or interoperability problems
+   due to mistakenly violating HTTP semantics.
+
+   For example, an "interception proxy" [RFC3040] (also commonly known
+   as a "transparent proxy" [RFC1919] or "captive portal") differs from
+   an HTTP proxy because it is not selected by the client.  Instead, an
+   interception proxy filters or redirects outgoing TCP port 80 packets
+   (and occasionally other common port traffic).  Interception proxies
+   are commonly found on public network access points, as a means of
+   enforcing account subscription prior to allowing use of non-local
+   Internet services, and within corporate firewalls to enforce network
+   usage policies.
+
+   HTTP is defined as a stateless protocol, meaning that each request
+   message can be understood in isolation.  Many implementations depend
+   on HTTP's stateless design in order to reuse proxied connections or
+   dynamically load balance requests across multiple servers.  Hence, a
+   server MUST NOT assume that two requests on the same connection are
+   from the same user agent unless the connection is secured and
+   specific to that agent.  Some non-standard HTTP extensions (e.g.,
+   [RFC4559]) have been known to violate this requirement, resulting in
+   security and interoperability problems.
+
+2.4.  Caches
+
+   A "cache" is a local store of previous response messages and the
+   subsystem that controls its message storage, retrieval, and deletion.
+   A cache stores cacheable responses in order to reduce the response
+   time and network bandwidth consumption on future, equivalent
+   requests.  Any client or server MAY employ a cache, though a cache
+   cannot be used by a server while it is acting as a tunnel.
+
+   The effect of a cache is that the request/response chain is shortened
+   if one of the participants along the chain has a cached response
+   applicable to that request.  The following illustrates the resulting
+   chain if B has a cached copy of an earlier response from O (via C)
+   for a request that has not been cached by UA or A.
+
+               >             >
+          UA =========== A =========== B - - - - - - C - - - - - - O
+                     <             <
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 11]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   A response is "cacheable" if a cache is allowed to store a copy of
+   the response message for use in answering subsequent requests.  Even
+   when a response is cacheable, there might be additional constraints
+   placed by the client or by the origin server on when that cached
+   response can be used for a particular request.  HTTP requirements for
+   cache behavior and cacheable responses are defined in Section 2 of
+   [RFC7234].
+
+   There is a wide variety of architectures and configurations of caches
+   deployed across the World Wide Web and inside large organizations.
+   These include national hierarchies of proxy caches to save
+   transoceanic bandwidth, collaborative systems that broadcast or
+   multicast cache entries, archives of pre-fetched cache entries for
+   use in off-line or high-latency environments, and so on.
+
+2.5.  Conformance and Error Handling
+
+   This specification targets conformance criteria according to the role
+   of a participant in HTTP communication.  Hence, HTTP requirements are
+   placed on senders, recipients, clients, servers, user agents,
+   intermediaries, origin servers, proxies, gateways, or caches,
+   depending on what behavior is being constrained by the requirement.
+   Additional (social) requirements are placed on implementations,
+   resource owners, and protocol element registrations when they apply
+   beyond the scope of a single communication.
+
+   The verb "generate" is used instead of "send" where a requirement
+   differentiates between creating a protocol element and merely
+   forwarding a received element downstream.
+
+   An implementation is considered conformant if it complies with all of
+   the requirements associated with the roles it partakes in HTTP.
+
+   Conformance includes both the syntax and semantics of protocol
+   elements.  A sender MUST NOT generate protocol elements that convey a
+   meaning that is known by that sender to be false.  A sender MUST NOT
+   generate protocol elements that do not match the grammar defined by
+   the corresponding ABNF rules.  Within a given message, a sender MUST
+   NOT generate protocol elements or syntax alternatives that are only
+   allowed to be generated by participants in other roles (i.e., a role
+   that the sender does not have for that message).
+
+   When a received protocol element is parsed, the recipient MUST be
+   able to parse any value of reasonable length that is applicable to
+   the recipient's role and that matches the grammar defined by the
+   corresponding ABNF rules.  Note, however, that some received protocol
+   elements might not be parsed.  For example, an intermediary
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 12]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   forwarding a message might parse a header-field into generic
+   field-name and field-value components, but then forward the header
+   field without further parsing inside the field-value.
+
+   HTTP does not have specific length limitations for many of its
+   protocol elements because the lengths that might be appropriate will
+   vary widely, depending on the deployment context and purpose of the
+   implementation.  Hence, interoperability between senders and
+   recipients depends on shared expectations regarding what is a
+   reasonable length for each protocol element.  Furthermore, what is
+   commonly understood to be a reasonable length for some protocol
+   elements has changed over the course of the past two decades of HTTP
+   use and is expected to continue changing in the future.
+
+   At a minimum, a recipient MUST be able to parse and process protocol
+   element lengths that are at least as long as the values that it
+   generates for those same protocol elements in other messages.  For
+   example, an origin server that publishes very long URI references to
+   its own resources needs to be able to parse and process those same
+   references when received as a request target.
+
+   A recipient MUST interpret a received protocol element according to
+   the semantics defined for it by this specification, including
+   extensions to this specification, unless the recipient has determined
+   (through experience or configuration) that the sender incorrectly
+   implements what is implied by those semantics.  For example, an
+   origin server might disregard the contents of a received
+   Accept-Encoding header field if inspection of the User-Agent header
+   field indicates a specific implementation version that is known to
+   fail on receipt of certain content codings.
+
+   Unless noted otherwise, a recipient MAY attempt to recover a usable
+   protocol element from an invalid construct.  HTTP does not define
+   specific error handling mechanisms except when they have a direct
+   impact on security, since different applications of the protocol
+   require different error handling strategies.  For example, a Web
+   browser might wish to transparently recover from a response where the
+   Location header field doesn't parse according to the ABNF, whereas a
+   systems control client might consider any form of error recovery to
+   be dangerous.
+
+2.6.  Protocol Versioning
+
+   HTTP uses a "<major>.<minor>" numbering scheme to indicate versions
+   of the protocol.  This specification defines version "1.1".  The
+   protocol version as a whole indicates the sender's conformance with
+   the set of requirements laid out in that version's corresponding
+   specification of HTTP.
+
+
+
+Fielding & Reschke           Standards Track                   [Page 13]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   The version of an HTTP message is indicated by an HTTP-version field
+   in the first line of the message.  HTTP-version is case-sensitive.
+
+     HTTP-version  = HTTP-name "/" DIGIT "." DIGIT
+     HTTP-name     = %x48.54.54.50 ; "HTTP", case-sensitive
+
+   The HTTP version number consists of two decimal digits separated by a
+   "." (period or decimal point).  The first digit ("major version")
+   indicates the HTTP messaging syntax, whereas the second digit ("minor
+   version") indicates the highest minor version within that major
+   version to which the sender is conformant and able to understand for
+   future communication.  The minor version advertises the sender's
+   communication capabilities even when the sender is only using a
+   backwards-compatible subset of the protocol, thereby letting the
+   recipient know that more advanced features can be used in response
+   (by servers) or in future requests (by clients).
+
+   When an HTTP/1.1 message is sent to an HTTP/1.0 recipient [RFC1945]
+   or a recipient whose version is unknown, the HTTP/1.1 message is
+   constructed such that it can be interpreted as a valid HTTP/1.0
+   message if all of the newer features are ignored.  This specification
+   places recipient-version requirements on some new features so that a
+   conformant sender will only use compatible features until it has
+   determined, through configuration or the receipt of a message, that
+   the recipient supports HTTP/1.1.
+
+   The interpretation of a header field does not change between minor
+   versions of the same major HTTP version, though the default behavior
+   of a recipient in the absence of such a field can change.  Unless
+   specified otherwise, header fields defined in HTTP/1.1 are defined
+   for all versions of HTTP/1.x.  In particular, the Host and Connection
+   header fields ought to be implemented by all HTTP/1.x implementations
+   whether or not they advertise conformance with HTTP/1.1.
+
+   New header fields can be introduced without changing the protocol
+   version if their defined semantics allow them to be safely ignored by
+   recipients that do not recognize them.  Header field extensibility is
+   discussed in Section 3.2.1.
+
+   Intermediaries that process HTTP messages (i.e., all intermediaries
+   other than those acting as tunnels) MUST send their own HTTP-version
+   in forwarded messages.  In other words, they are not allowed to
+   blindly forward the first line of an HTTP message without ensuring
+   that the protocol version in that message matches a version to which
+   that intermediary is conformant for both the receiving and sending of
+   messages.  Forwarding an HTTP message without rewriting the
+
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 14]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   HTTP-version might result in communication errors when downstream
+   recipients use the message sender's version to determine what
+   features are safe to use for later communication with that sender.
+
+   A client SHOULD send a request version equal to the highest version
+   to which the client is conformant and whose major version is no
+   higher than the highest version supported by the server, if this is
+   known.  A client MUST NOT send a version to which it is not
+   conformant.
+
+   A client MAY send a lower request version if it is known that the
+   server incorrectly implements the HTTP specification, but only after
+   the client has attempted at least one normal request and determined
+   from the response status code or header fields (e.g., Server) that
+   the server improperly handles higher request versions.
+
+   A server SHOULD send a response version equal to the highest version
+   to which the server is conformant that has a major version less than
+   or equal to the one received in the request.  A server MUST NOT send
+   a version to which it is not conformant.  A server can send a 505
+   (HTTP Version Not Supported) response if it wishes, for any reason,
+   to refuse service of the client's major protocol version.
+
+   A server MAY send an HTTP/1.0 response to a request if it is known or
+   suspected that the client incorrectly implements the HTTP
+   specification and is incapable of correctly processing later version
+   responses, such as when a client fails to parse the version number
+   correctly or when an intermediary is known to blindly forward the
+   HTTP-version even when it doesn't conform to the given minor version
+   of the protocol.  Such protocol downgrades SHOULD NOT be performed
+   unless triggered by specific client attributes, such as when one or
+   more of the request header fields (e.g., User-Agent) uniquely match
+   the values sent by a client known to be in error.
+
+   The intention of HTTP's versioning design is that the major number
+   will only be incremented if an incompatible message syntax is
+   introduced, and that the minor number will only be incremented when
+   changes made to the protocol have the effect of adding to the message
+   semantics or implying additional capabilities of the sender.
+   However, the minor version was not incremented for the changes
+   introduced between [RFC2068] and [RFC2616], and this revision has
+   specifically avoided any such changes to the protocol.
+
+   When an HTTP message is received with a major version number that the
+   recipient implements, but a higher minor version number than what the
+   recipient implements, the recipient SHOULD process the message as if
+   it were in the highest minor version within that major version to
+   which the recipient is conformant.  A recipient can assume that a
+
+
+
+Fielding & Reschke           Standards Track                   [Page 15]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   message with a higher minor version, when sent to a recipient that
+   has not yet indicated support for that higher version, is
+   sufficiently backwards-compatible to be safely processed by any
+   implementation of the same major version.
+
+2.7.  Uniform Resource Identifiers
+
+   Uniform Resource Identifiers (URIs) [RFC3986] are used throughout
+   HTTP as the means for identifying resources (Section 2 of [RFC7231]).
+   URI references are used to target requests, indicate redirects, and
+   define relationships.
+
+   The definitions of "URI-reference", "absolute-URI", "relative-part",
+   "scheme", "authority", "port", "host", "path-abempty", "segment",
+   "query", and "fragment" are adopted from the URI generic syntax.  An
+   "absolute-path" rule is defined for protocol elements that can
+   contain a non-empty path component.  (This rule differs slightly from
+   the path-abempty rule of RFC 3986, which allows for an empty path to
+   be used in references, and path-absolute rule, which does not allow
+   paths that begin with "//".)  A "partial-URI" rule is defined for
+   protocol elements that can contain a relative URI but not a fragment
+   component.
+
+     URI-reference = <URI-reference, see [RFC3986], Section 4.1>
+     absolute-URI  = <absolute-URI, see [RFC3986], Section 4.3>
+     relative-part = <relative-part, see [RFC3986], Section 4.2>
+     scheme        = <scheme, see [RFC3986], Section 3.1>
+     authority     = <authority, see [RFC3986], Section 3.2>
+     uri-host      = <host, see [RFC3986], Section 3.2.2>
+     port          = <port, see [RFC3986], Section 3.2.3>
+     path-abempty  = <path-abempty, see [RFC3986], Section 3.3>
+     segment       = <segment, see [RFC3986], Section 3.3>
+     query         = <query, see [RFC3986], Section 3.4>
+     fragment      = <fragment, see [RFC3986], Section 3.5>
+
+     absolute-path = 1*( "/" segment )
+     partial-URI   = relative-part [ "?" query ]
+
+   Each protocol element in HTTP that allows a URI reference will
+   indicate in its ABNF production whether the element allows any form
+   of reference (URI-reference), only a URI in absolute form
+   (absolute-URI), only the path and optional query components, or some
+   combination of the above.  Unless otherwise indicated, URI references
+   are parsed relative to the effective request URI (Section 5.5).
+
+
+
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 16]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+2.7.1.  http URI Scheme
+
+   The "http" URI scheme is hereby defined for the purpose of minting
+   identifiers according to their association with the hierarchical
+   namespace governed by a potential HTTP origin server listening for
+   TCP ([RFC0793]) connections on a given port.
+
+     http-URI = "http:" "//" authority path-abempty [ "?" query ]
+                [ "#" fragment ]
+
+   The origin server for an "http" URI is identified by the authority
+   component, which includes a host identifier and optional TCP port
+   ([RFC3986], Section 3.2.2).  The hierarchical path component and
+   optional query component serve as an identifier for a potential
+   target resource within that origin server's name space.  The optional
+   fragment component allows for indirect identification of a secondary
+   resource, independent of the URI scheme, as defined in Section 3.5 of
+   [RFC3986].
+
+   A sender MUST NOT generate an "http" URI with an empty host
+   identifier.  A recipient that processes such a URI reference MUST
+   reject it as invalid.
+
+   If the host identifier is provided as an IP address, the origin
+   server is the listener (if any) on the indicated TCP port at that IP
+   address.  If host is a registered name, the registered name is an
+   indirect identifier for use with a name resolution service, such as
+   DNS, to find an address for that origin server.  If the port
+   subcomponent is empty or not given, TCP port 80 (the reserved port
+   for WWW services) is the default.
+
+   Note that the presence of a URI with a given authority component does
+   not imply that there is always an HTTP server listening for
+   connections on that host and port.  Anyone can mint a URI.  What the
+   authority component determines is who has the right to respond
+   authoritatively to requests that target the identified resource.  The
+   delegated nature of registered names and IP addresses creates a
+   federated namespace, based on control over the indicated host and
+   port, whether or not an HTTP server is present.  See Section 9.1 for
+   security considerations related to establishing authority.
+
+   When an "http" URI is used within a context that calls for access to
+   the indicated resource, a client MAY attempt access by resolving the
+   host to an IP address, establishing a TCP connection to that address
+   on the indicated port, and sending an HTTP request message
+   (Section 3) containing the URI's identifying data (Section 5) to the
+   server.  If the server responds to that request with a non-interim
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 17]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   HTTP response message, as described in Section 6 of [RFC7231], then
+   that response is considered an authoritative answer to the client's
+   request.
+
+   Although HTTP is independent of the transport protocol, the "http"
+   scheme is specific to TCP-based services because the name delegation
+   process depends on TCP for establishing authority.  An HTTP service
+   based on some other underlying connection protocol would presumably
+   be identified using a different URI scheme, just as the "https"
+   scheme (below) is used for resources that require an end-to-end
+   secured connection.  Other protocols might also be used to provide
+   access to "http" identified resources -- it is only the authoritative
+   interface that is specific to TCP.
+
+   The URI generic syntax for authority also includes a deprecated
+   userinfo subcomponent ([RFC3986], Section 3.2.1) for including user
+   authentication information in the URI.  Some implementations make use
+   of the userinfo component for internal configuration of
+   authentication information, such as within command invocation
+   options, configuration files, or bookmark lists, even though such
+   usage might expose a user identifier or password.  A sender MUST NOT
+   generate the userinfo subcomponent (and its "@" delimiter) when an
+   "http" URI reference is generated within a message as a request
+   target or header field value.  Before making use of an "http" URI
+   reference received from an untrusted source, a recipient SHOULD parse
+   for userinfo and treat its presence as an error; it is likely being
+   used to obscure the authority for the sake of phishing attacks.
+
+2.7.2.  https URI Scheme
+
+   The "https" URI scheme is hereby defined for the purpose of minting
+   identifiers according to their association with the hierarchical
+   namespace governed by a potential HTTP origin server listening to a
+   given TCP port for TLS-secured connections ([RFC5246]).
+
+   All of the requirements listed above for the "http" scheme are also
+   requirements for the "https" scheme, except that TCP port 443 is the
+   default if the port subcomponent is empty or not given, and the user
+   agent MUST ensure that its connection to the origin server is secured
+   through the use of strong encryption, end-to-end, prior to sending
+   the first HTTP request.
+
+     https-URI = "https:" "//" authority path-abempty [ "?" query ]
+                 [ "#" fragment ]
+
+   Note that the "https" URI scheme depends on both TLS and TCP for
+   establishing authority.  Resources made available via the "https"
+   scheme have no shared identity with the "http" scheme even if their
+
+
+
+Fielding & Reschke           Standards Track                   [Page 18]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   resource identifiers indicate the same authority (the same host
+   listening to the same TCP port).  They are distinct namespaces and
+   are considered to be distinct origin servers.  However, an extension
+   to HTTP that is defined to apply to entire host domains, such as the
+   Cookie protocol [RFC6265], can allow information set by one service
+   to impact communication with other services within a matching group
+   of host domains.
+
+   The process for authoritative access to an "https" identified
+   resource is defined in [RFC2818].
+
+2.7.3.  http and https URI Normalization and Comparison
+
+   Since the "http" and "https" schemes conform to the URI generic
+   syntax, such URIs are normalized and compared according to the
+   algorithm defined in Section 6 of [RFC3986], using the defaults
+   described above for each scheme.
+
+   If the port is equal to the default port for a scheme, the normal
+   form is to omit the port subcomponent.  When not being used in
+   absolute form as the request target of an OPTIONS request, an empty
+   path component is equivalent to an absolute path of "/", so the
+   normal form is to provide a path of "/" instead.  The scheme and host
+   are case-insensitive and normally provided in lowercase; all other
+   components are compared in a case-sensitive manner.  Characters other
+   than those in the "reserved" set are equivalent to their
+   percent-encoded octets: the normal form is to not encode them (see
+   Sections 2.1 and 2.2 of [RFC3986]).
+
+   For example, the following three URIs are equivalent:
+
+      http://example.com:80/~smith/home.html
+      http://EXAMPLE.com/%7Esmith/home.html
+      http://EXAMPLE.com:/%7esmith/home.html
+
+3.  Message Format
+
+   All HTTP/1.1 messages consist of a start-line followed by a sequence
+   of octets in a format similar to the Internet Message Format
+   [RFC5322]: zero or more header fields (collectively referred to as
+   the "headers" or the "header section"), an empty line indicating the
+   end of the header section, and an optional message body.
+
+     HTTP-message   = start-line
+                      *( header-field CRLF )
+                      CRLF
+                      [ message-body ]
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 19]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   The normal procedure for parsing an HTTP message is to read the
+   start-line into a structure, read each header field into a hash table
+   by field name until the empty line, and then use the parsed data to
+   determine if a message body is expected.  If a message body has been
+   indicated, then it is read as a stream until an amount of octets
+   equal to the message body length is read or the connection is closed.
+
+   A recipient MUST parse an HTTP message as a sequence of octets in an
+   encoding that is a superset of US-ASCII [USASCII].  Parsing an HTTP
+   message as a stream of Unicode characters, without regard for the
+   specific encoding, creates security vulnerabilities due to the
+   varying ways that string processing libraries handle invalid
+   multibyte character sequences that contain the octet LF (%x0A).
+   String-based parsers can only be safely used within protocol elements
+   after the element has been extracted from the message, such as within
+   a header field-value after message parsing has delineated the
+   individual fields.
+
+   An HTTP message can be parsed as a stream for incremental processing
+   or forwarding downstream.  However, recipients cannot rely on
+   incremental delivery of partial messages, since some implementations
+   will buffer or delay message forwarding for the sake of network
+   efficiency, security checks, or payload transformations.
+
+   A sender MUST NOT send whitespace between the start-line and the
+   first header field.  A recipient that receives whitespace between the
+   start-line and the first header field MUST either reject the message
+   as invalid or consume each whitespace-preceded line without further
+   processing of it (i.e., ignore the entire line, along with any
+   subsequent lines preceded by whitespace, until a properly formed
+   header field is received or the header section is terminated).
+
+   The presence of such whitespace in a request might be an attempt to
+   trick a server into ignoring that field or processing the line after
+   it as a new request, either of which might result in a security
+   vulnerability if other implementations within the request chain
+   interpret the same message differently.  Likewise, the presence of
+   such whitespace in a response might be ignored by some clients or
+   cause others to cease parsing.
+
+3.1.  Start Line
+
+   An HTTP message can be either a request from client to server or a
+   response from server to client.  Syntactically, the two types of
+   message differ only in the start-line, which is either a request-line
+   (for requests) or a status-line (for responses), and in the algorithm
+   for determining the length of the message body (Section 3.3).
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 20]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   In theory, a client could receive requests and a server could receive
+   responses, distinguishing them by their different start-line formats,
+   but, in practice, servers are implemented to only expect a request (a
+   response is interpreted as an unknown or invalid request method) and
+   clients are implemented to only expect a response.
+
+     start-line     = request-line / status-line
+
+3.1.1.  Request Line
+
+   A request-line begins with a method token, followed by a single space
+   (SP), the request-target, another single space (SP), the protocol
+   version, and ends with CRLF.
+
+     request-line   = method SP request-target SP HTTP-version CRLF
+
+   The method token indicates the request method to be performed on the
+   target resource.  The request method is case-sensitive.
+
+     method         = token
+
+   The request methods defined by this specification can be found in
+   Section 4 of [RFC7231], along with information regarding the HTTP
+   method registry and considerations for defining new methods.
+
+   The request-target identifies the target resource upon which to apply
+   the request, as defined in Section 5.3.
+
+   Recipients typically parse the request-line into its component parts
+   by splitting on whitespace (see Section 3.5), since no whitespace is
+   allowed in the three components.  Unfortunately, some user agents
+   fail to properly encode or exclude whitespace found in hypertext
+   references, resulting in those disallowed characters being sent in a
+   request-target.
+
+   Recipients of an invalid request-line SHOULD respond with either a
+   400 (Bad Request) error or a 301 (Moved Permanently) redirect with
+   the request-target properly encoded.  A recipient SHOULD NOT attempt
+   to autocorrect and then process the request without a redirect, since
+   the invalid request-line might be deliberately crafted to bypass
+   security filters along the request chain.
+
+   HTTP does not place a predefined limit on the length of a
+   request-line, as described in Section 2.5.  A server that receives a
+   method longer than any that it implements SHOULD respond with a 501
+   (Not Implemented) status code.  A server that receives a
+
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 21]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+   request-target longer than any URI it wishes to parse MUST respond
+   with a 414 (URI Too Long) status code (see Section 6.5.12 of
+   [RFC7231]).
+
+   Various ad hoc limitations on request-line length are found in
+   practice.  It is RECOMMENDED that all HTTP senders and recipients
+   support, at a minimum, request-line lengths of 8000 octets.
+
+3.1.2.  Status Line
+
+   The first line of a response message is the status-line, consisting
+   of the protocol version, a space (SP), the status code, another
+   space, a possibly empty textual phrase describing the status code,
+   and ending with CRLF.
+
+     status-line = HTTP-version SP status-code SP reason-phrase CRLF
+
+   The status-code element is a 3-digit integer code describing the
+   result of the server's attempt to understand and satisfy the client's
+   corresponding request.  The rest of the response message is to be
+   interpreted in light of the semantics defined for that status code.
+   See Section 6 of [RFC7231] for information about the semantics of
+   status codes, including the classes of status code (indicated by the
+   first digit), the status codes defined by this specification,
+   considerations for the definition of new status codes, and the IANA
+   registry.
+
+     status-code    = 3DIGIT
+
+   The reason-phrase element exists for the sole purpose of providing a
+   textual description associated with the numeric status code, mostly
+   out of deference to earlier Internet application protocols that were
+   more frequently used with interactive text clients.  A client SHOULD
+   ignore the reason-phrase content.
+
+     reason-phrase  = *( HTAB / SP / VCHAR / obs-text )
+
+3.2.  Header Fields
+
+   Each header field consists of a case-insensitive field name followed
+   by a colon (":"), optional leading whitespace, the field value, and
+   optional trailing whitespace.
+
+
+
+
+
+
+
+
+
+Fielding & Reschke           Standards Track                   [Page 22]
+
+RFC 7230           HTTP/1.1 Message Syntax and Routing         June 2014
+
+
+     header-field   = field-name ":" OWS field-value OWS
+
+     field-name     = token
+     field-value    = *( field-content / obs-fold )
+     field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+     field-vchar    = VCHAR / obs-text
+
+     obs-fold       = CRLF 1*( SP / HTAB )
+                    ; obsolete line folding
+                    ; see Section 3.2.4
+
+   The field-name token labels the corresponding field-value as having
+   the semantics defined by that header field.  For example, the Date
+   header field is defined in Section 7.1.1.2 of [RFC7231] as containing
+   the origination timestamp for the message in which it appears.
+
+3.2.1.  Field Extensibility
+
+   Header fields are fully extensible: there is no limit on the
+   introduction of new field names, each presumably defining new
+   semantics, nor on the number of header fields used in a given
+   message.  Existing fields are defined in each part of this
+   specification and in many other specifications outside this document
+   set.
+
+   New header fields can be defined such that, when they are understood
+   by a recipient, they might override or enhance the interpretation of
+   previously defined header fields, define preconditions on request
+   evaluation, or refine the meaning of responses.
+
+   A proxy MUST forward unrecognized header fields unless the field-name
+   is listed in the Connection header field (Section 6.1) or the proxy
+   is specifically configured to block, or otherwise transform, such
+   fields.  Other recipients SHOULD ignore unrecognized header fields.
+   These requirements allow HTTP's functionali

@@ -228,7 +228,7 @@ private:
 	}
 
 	//-1->其它 0->失败 1->CR 2->LF
-	int32_t GetCRLF(StateContext &contextState, char c) noexcept
+	int32_t ParseCRLF(StateContext &contextState, char c) noexcept
 	{
 		if (c == '\r')//保证\r\n成对出现
 		{
@@ -289,7 +289,7 @@ private:
 
 	bool ParseReady(StateContext &contextState, char c, StateContext::ParseState enNextState) noexcept
 	{
-		int32_t i32Ret = GetCRLF(contextState, c);
+		int32_t i32Ret = ParseCRLF(contextState, c);
 		if (i32Ret >= 0)
 		{
 			return (bool)i32Ret;
@@ -356,6 +356,12 @@ private:
 	}
 
 	bool ParseVersion(StateContext &contextState, char c) noexcept
+	{
+
+		return true;
+	}
+
+	bool ParseVersionEnd(StateContext &contextState, char c) noexcept
 	{
 
 		return true;
