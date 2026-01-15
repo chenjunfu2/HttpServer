@@ -192,10 +192,10 @@ private:
 		case StateContext::ParseState::VERSION:
 			return ParseVersion(contextState, c);
 			break;
-		case StateContext::ParseState::VERSION_END:
+		case StateContext::ParseState::VERSION_END://处理到第一个CRLF切换下一状态并返回
 			//return;
 			break;
-		case StateContext::ParseState::REQUEST_LINE_END:
+		case StateContext::ParseState::REQUEST_LINE_END://保证遇到的第一个是字符然后切换下一状态，否则失败
 
 			break;
 		case StateContext::ParseState::HEADER_KEY:
