@@ -19,20 +19,19 @@ public:
 		PATH,			//解析路径
 		PATH_END,		//路径后空白
 		VERSION,		//解析版本
-		VERSION_END,	//版本后空白与换行
+		VERSION_END,	//版本后空白
 
-		REQUEST_LINE_END,//请求行结束
+		START_LINE_END,	//开始行结束
 
-		HEADER_KEY,		//解析header键
-		HEADER_KEY_END,	//header键后空白
-		HEADER_VAL,		//解析header值
-		HEADER_VAL_END,	//header值后空白与换行
+		FIELD_KEY,		//解析header键
+		FIELD_KEY_END,	//header键后空白
+		FIELD_VAL,		//解析header值
+		FIELD_VAL_END,	//header值后空白
+		FIELD_LINE_END,//解析header行结束
 
-		HEADER_LINE_END,//解析header行结束
+		HEADER_FIELD_END,//header解析结束
 
-		HEADER_END,		//header解析结束
-
-		BODY,			//解析body
+		CONTENT,		//解析content(body)
 
 		COMPLETE,		//解析完成
 
@@ -60,8 +59,8 @@ protected:
 	size_t szMaxPathLength = 0;//最大路径长度
 	size_t szMaxHeaderLength = 0;//最大头部长度
 	size_t szMaxContentLength = 0;//最大内容长度（Body长度）
+	size_t szMaxRequestLength = 0;//完整请求最大长度
 
-	size_t szHeaderLength = 0;//头部长度
 	size_t szContentLength = 0;//内容长度（Body长度）
 	
 	size_t szConsecutiveCRLF = 0;//连续的换行
@@ -80,8 +79,8 @@ protected:
 		szMaxPathLength = 0;
 		szMaxHeaderLength = 0;
 		szMaxContentLength = 0;
+		szMaxRequestLength = 0;
 
-		szHeaderLength = 0;
 		szContentLength = 0;
 
 		szConsecutiveCRLF = 0;
@@ -105,8 +104,8 @@ public:
 	GETTER_COPY(MaxPathLength, szMaxPathLength);
 	GETTER_COPY(MaxHeaderLength, szMaxHeaderLength);
 	GETTER_COPY(MaxContentLength, szMaxContentLength);
+	GETTER_COPY(MaxRequestLength, szMaxRequestLength);
 
-	GETTER_COPY(HeaderLength, szHeaderLength);
 	GETTER_COPY(ContentLength, szContentLength);
 
 };
@@ -138,16 +137,45 @@ public:
 		CLOSE,
 	};
 
+public:
+	struct StartLine
+	{
+		Method enMethod = Method::UNKNOWN;
+		std::string strPath{};
+		std::string strVersion{};
+		
+	};
+	
+	struct HeaderField
+	{
+		ConnectionType enConnectionType = ConnectionType::UNKNOWN;
+		std::string strHost{};
+		std::unordered_map<std::string, std::string> mapFields{};
+	};
+
+	struct MessageBody
+	{
+		std::string strContent{};//Body
+	};
+
 private:
-	Method enMethod = Method::UNKNOWN;
-	ConnectionType enConnectionType = ConnectionType::UNKNOWN;
+	StartLine stStartLine;
+	HeaderField stHeaderField;
+	MessageBody stMessageBody;
 
-	std::string strPath{};
-	std::string strVersion{};
-	std::string strHost{};
-	std::string strBody{};
+public:
+	void Clear(void) noexcept
+	{
+		stStartLine.enMethod = Method::UNKNOWN;
+		stStartLine.strPath.clear();
+		stStartLine.strVersion.clear();
+		
+		stHeaderField.enConnectionType = ConnectionType::UNKNOWN;
+		stHeaderField.strHost.clear();
+		stHeaderField.mapFields.clear();
 
-	std::unordered_map<std::string, std::string> mapHeaders{};
+		stMessageBody.strContent.clear();
+	}
 
 private:
 	bool SetMethod(const std::string &strMethod) noexcept
@@ -177,7 +205,7 @@ private:
 			return false;
 		}
 
-		enMethod = it->second;
+		stStartLine.enMethod = it->second;
 		return true;
 	}
 
@@ -341,49 +369,49 @@ private:
 		return true;
 	}
 
-	bool ParseRequestLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseStartLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderKey(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseFieldKey(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderKeyEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseFieldKeyEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderVal(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseFieldVal(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderValEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseFieldValEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseFieldLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseHeaderFieldEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseBody(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseContent(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
@@ -422,29 +450,29 @@ private:
 			case StateContext::ParseState::VERSION_END://处理到第一个CRLF切换下一状态并返回
 				bRet = ParseVersionEnd(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::REQUEST_LINE_END://保证遇到的第一个是字符然后切换下一状态，否则失败
-				bRet = ParseRequestLineEnd(contextState, c, bReuseChar);
+			case StateContext::ParseState::START_LINE_END://保证遇到的第一个是字符然后切换下一状态，否则失败
+				bRet = ParseStartLineEnd(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::HEADER_KEY:
-				bRet = ParseHeaderKey(contextState, c, bReuseChar);
+			case StateContext::ParseState::FIELD_KEY:
+				bRet = ParseFieldKey(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::HEADER_KEY_END:
-				bRet = ParseHeaderKeyEnd(contextState, c, bReuseChar);
+			case StateContext::ParseState::FIELD_KEY_END:
+				bRet = ParseFieldKeyEnd(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::HEADER_VAL:
-				bRet = ParseHeaderVal(contextState, c, bReuseChar);
+			case StateContext::ParseState::FIELD_VAL:
+				bRet = ParseFieldVal(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::HEADER_VAL_END:
-				bRet = ParseHeaderValEnd(contextState, c, bReuseChar);
+			case StateContext::ParseState::FIELD_VAL_END:
+				bRet = ParseFieldValEnd(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::HEADER_LINE_END:
-				bRet = ParseHeaderLineEnd(contextState, c, bReuseChar);
+			case StateContext::ParseState::FIELD_LINE_END:
+				bRet = ParseFieldLineEnd(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::HEADER_END:
-				bRet = ParseHeaderEnd(contextState, c, bReuseChar);
+			case StateContext::ParseState::HEADER_FIELD_END:
+				bRet = ParseHeaderFieldEnd(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::BODY:
-				bRet = ParseBody(contextState, c, bReuseChar);
+			case StateContext::ParseState::CONTENT:
+				bRet = ParseContent(contextState, c, bReuseChar);
 				break;
 			case StateContext::ParseState::COMPLETE:
 			case StateContext::ParseState::ERROR:
@@ -459,35 +487,40 @@ private:
 
 	//--------------------------------------------------------------------------//
 	
-	static StateContext GetNewContext(size_t szMaxPathLength) noexcept
+	static StateContext GetNewContext(
+		size_t szMaxPathLength,
+		size_t szMaxHeaderLength,
+		size_t szMaxContentLength,
+		size_t szMaxRequestLength) noexcept
 	{
 		StateContext ctxNew{};
+
 		ctxNew.szMaxPathLength = szMaxPathLength;
+		ctxNew.szMaxHeaderLength = szMaxHeaderLength;
+		ctxNew.szMaxContentLength = szMaxContentLength;
+		ctxNew.szMaxRequestLength = szMaxRequestLength;
+
 		return ctxNew;
 	}
 
-	static void ReuseContext(StateContext &ctxReuse, size_t szMaxPathLength) noexcept
+	static void ReuseContext(
+		StateContext &ctxReuse,
+		size_t szMaxPathLength,
+		size_t szMaxHeaderLength,
+		size_t szMaxContentLength,
+		size_t szMaxRequestLength) noexcept
 	{
 		ctxReuse.Clear();
+
 		ctxReuse.szMaxPathLength = szMaxPathLength;
+		ctxReuse.szMaxHeaderLength = szMaxHeaderLength;
+		ctxReuse.szMaxContentLength = szMaxContentLength;
+		ctxReuse.szMaxRequestLength = szMaxRequestLength;
 	}
 
 	//--------------------------------------------------------------------------//
 
 public:
-	void Clear(void) noexcept
-	{
-		enMethod = Method::UNKNOWN;
-		enConnectionType = ConnectionType::UNKNOWN;
-
-		strPath.clear();
-		strVersion.clear();
-		strHost.clear();
-		strBody.clear();
-
-		mapHeaders.clear();
-	}
-
 	DEFAULT_CSTC(HttpRequest);
 	DEFAULT_DSTC(HttpRequest);
 
