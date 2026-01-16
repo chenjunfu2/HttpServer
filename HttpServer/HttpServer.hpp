@@ -306,7 +306,6 @@ private:
 		return true;
 	}
 
-	//处理路径，解析%与/
 	bool ParsePath(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
