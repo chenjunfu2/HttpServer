@@ -288,6 +288,8 @@ private:
 		return true;
 	}
 
+	//请求行以方法标识符起始，后接单个空格(SP)、请求目标、再一个单个空格(SP)、协议版本，最终以CRLF结尾。
+
 	bool ParseMethod(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 		if (c == '\r' || c == '\n')//非法
@@ -357,6 +359,7 @@ private:
 		return true;
 	}
 
+	//拒绝所有以空白起始行的消息
 	bool ParseVersion(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
