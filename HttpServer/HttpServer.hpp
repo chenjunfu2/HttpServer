@@ -170,62 +170,8 @@ private:
 		return true;
 	}
 
-	bool ParseChar(StateContext &contextState, char c) noexcept
-	{
-		switch (contextState.enParseState)
-		{
-		case StateContext::ParseState::READY:
-			return ParseReady(contextState, c, StateContext::ParseState::METHOD);
-			break;
-		case StateContext::ParseState::METHOD:
-			return ParseMethod(contextState, c);
-			break;
-		case StateContext::ParseState::METHOD_END:
-			return ParseSkipSpace(contextState, c, StateContext::ParseState::PATH);
-			break;
-		case StateContext::ParseState::PATH:
-			return ParsePath(contextState, c);
-			break;
-		case StateContext::ParseState::PATH_END:
-			return ParseSkipSpace(contextState, c, StateContext::ParseState::VERSION);
-			break;
-		case StateContext::ParseState::VERSION:
-			return ParseVersion(contextState, c);
-			break;
-		case StateContext::ParseState::VERSION_END://处理到第一个CRLF切换下一状态并返回
-			//return;
-			break;
-		case StateContext::ParseState::REQUEST_LINE_END://保证遇到的第一个是字符然后切换下一状态，否则失败
-
-			break;
-		case StateContext::ParseState::HEADER_KEY:
-			return ParseHeaderKey(contextState, c);
-			break;
-		case StateContext::ParseState::HEADER_KEY_END:
-
-			break;
-		case StateContext::ParseState::HEADER_VAL:
-			return ParseHeaderVal(contextState, c);
-			break;
-		case StateContext::ParseState::HEADER_VAL_END:
-
-			break;
-		case StateContext::ParseState::HEADER_LINE_END:
-
-			break;
-		case StateContext::ParseState::HEADER_END:
-			return ParseHeaderEnd(contextState, c);
-			break;
-		case StateContext::ParseState::BODY:
-			return ParseBody(contextState, c);
-			break;
-		case StateContext::ParseState::COMPLETE:
-		case StateContext::ParseState::ERROR:
-		default:
-			return false;
-			break;
-		}
-	}
+private:
+	//--------------------------------------------------------------------------//
 
 	//-1->其它 0->失败 1->CR 2->LF
 	int32_t ParseCRLF(StateContext &contextState, char c) noexcept
@@ -287,7 +233,9 @@ private:
 		return true;
 	}
 
-	bool ParseReady(StateContext &contextState, char c, StateContext::ParseState enNextState) noexcept
+	//--------------------------------------------------------------------------//
+
+	bool ParseReady(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 		int32_t i32Ret = ParseCRLF(contextState, c);
 		if (i32Ret >= 0)
@@ -308,11 +256,11 @@ private:
 		}
 
 		contextState.strTempBuffer.push_back(c);
-		contextState.enParseState = enNextState;
+		contextState.enParseState = StateContext::ParseState::METHOD;
 		return true;
 	}
 
-	bool ParseMethod(StateContext &contextState, char c) noexcept
+	bool ParseMethod(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 		if (c == '\r' || c == '\n')//非法
 		{
@@ -349,47 +297,151 @@ private:
 		return true;
 	}
 
-	bool ParsePath(StateContext &contextState, char c) noexcept
+	bool ParseMethodEnd(StateContext &contextState, char c, bool &bReuseChar)
+	{
+
+	}
+
+	//处理路径，解析%与/
+	bool ParsePath(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseVersion(StateContext &contextState, char c) noexcept
+	bool ParsePathEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseVersionEnd(StateContext &contextState, char c) noexcept
+	bool ParseVersion(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderKey(StateContext &contextState, char c) noexcept
+	bool ParseVersionEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderVal(StateContext &contextState, char c) noexcept
+	bool ParseRequestLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseHeaderEnd(StateContext &contextState, char c) noexcept
+	bool ParseHeaderKey(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
 
-	bool ParseBody(StateContext &contextState, char c) noexcept
+	bool ParseHeaderKeyEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
 	}
+
+	bool ParseHeaderVal(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	{
+
+		return true;
+	}
+
+	bool ParseHeaderValEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	{
+
+		return true;
+	}
+
+	bool ParseHeaderLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	{
+
+		return true;
+	}
+
+	bool ParseHeaderEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	{
+
+		return true;
+	}
+
+	bool ParseBody(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	{
+
+		return true;
+	}
+
+	//--------------------------------------------------------------------------//
+
+	bool ParseChar(StateContext &contextState, char c) noexcept
+	{
+		bool bReuseChar = false;
+		bool bRet = false;
+		do
+		{
+			switch (contextState.enParseState)
+			{
+			case StateContext::ParseState::READY:
+				bRet = ParseReady(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::METHOD:
+				bRet = ParseMethod(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::METHOD_END:
+				bRet = ParseMethodEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::PATH:
+				bRet = ParsePath(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::PATH_END:
+				bRet = ParsePathEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::VERSION:
+				bRet = ParseVersion(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::VERSION_END://处理到第一个CRLF切换下一状态并返回
+				bRet = ParseVersionEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::REQUEST_LINE_END://保证遇到的第一个是字符然后切换下一状态，否则失败
+				bRet = ParseRequestLineEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::HEADER_KEY:
+				bRet = ParseHeaderKey(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::HEADER_KEY_END:
+				bRet = ParseHeaderKeyEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::HEADER_VAL:
+				bRet = ParseHeaderVal(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::HEADER_VAL_END:
+				bRet = ParseHeaderValEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::HEADER_LINE_END:
+				bRet = ParseHeaderLineEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::HEADER_END:
+				bRet = ParseHeaderEnd(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::BODY:
+				bRet = ParseBody(contextState, c, bReuseChar);
+				break;
+			case StateContext::ParseState::COMPLETE:
+			case StateContext::ParseState::ERROR:
+			default:
+				bRet = false;
+				break;
+			}
+		} while (bReuseChar);
+
+		return bRet;
+	}
+
+	//--------------------------------------------------------------------------//
 
 public:
 	void Clear(void) noexcept
