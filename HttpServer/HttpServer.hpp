@@ -249,14 +249,9 @@ private:
 			return true;
 		}
 
-		if (!isalpha(c))//确保字符正确
-		{
-			contextState.SetParseError(StateContext::ParseError::UNEXPECTED_CHAR);
-			return false;
-		}
-
-		contextState.strTempBuffer.push_back(c);
+		//遇到第一个非空白，转到METHOD处理
 		contextState.enParseState = StateContext::ParseState::METHOD;
+		bReuseChar = true;//重用字符，交给METHOD解析
 		return true;
 	}
 
@@ -276,8 +271,12 @@ private:
 				return false;
 			}
 
+			
 			contextState.strTempBuffer.clear();
-			contextState.enParseState = StateContext::ParseState::PATH;
+
+			//转换并重用字符
+			contextState.enParseState = StateContext::ParseState::METHOD_END;
+			bReuseChar = true;
 			return true;
 		}
 
@@ -379,10 +378,12 @@ private:
 
 	bool ParseChar(StateContext &contextState, char c) noexcept
 	{
-		bool bReuseChar = false;
+		bool bReuseChar{};
 		bool bRet = false;
 		do
 		{
+			bReuseChar = false;//每次重置
+
 			switch (contextState.enParseState)
 			{
 			case StateContext::ParseState::READY:
