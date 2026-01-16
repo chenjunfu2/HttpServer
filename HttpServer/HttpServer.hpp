@@ -58,8 +58,10 @@ protected:
 	std::string strTempBuffer{};
 
 	size_t szMaxPathLength = 0;//最大路径长度
+	size_t szMaxHeaderLength = 0;//最大头部长度
+	size_t szMaxContentLength = 0;//最大内容长度（Body长度）
 
-	size_t szHeaderSize = 0;//头部长度
+	size_t szHeaderLength = 0;//头部长度
 	size_t szContentLength = 0;//内容长度（Body长度）
 	
 	size_t szConsecutiveCRLF = 0;//连续的换行
@@ -76,8 +78,10 @@ protected:
 		strTempBuffer.clear();
 
 		szMaxPathLength = 0;
+		szMaxHeaderLength = 0;
+		szMaxContentLength = 0;
 
-		szHeaderSize = 0;
+		szHeaderLength = 0;
 		szContentLength = 0;
 
 		szConsecutiveCRLF = 0;
@@ -99,7 +103,10 @@ public:
 	GETTER_COPY(ParseError, enParseError);
 
 	GETTER_COPY(MaxPathLength, szMaxPathLength);
-	GETTER_COPY(HeaderSize, szHeaderSize);
+	GETTER_COPY(MaxHeaderLength, szMaxHeaderLength);
+	GETTER_COPY(MaxContentLength, szMaxContentLength);
+
+	GETTER_COPY(HeaderLength, szHeaderLength);
 	GETTER_COPY(ContentLength, szContentLength);
 
 };
@@ -558,9 +565,6 @@ class Connection
 class HttpServer
 {
 private:
-	size_t szMaxHeaderSize;//请求头最大值
-	size_t szMaxBodySize;//请求体最大值
-
 
 
 public:
