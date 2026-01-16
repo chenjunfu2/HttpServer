@@ -173,7 +173,7 @@ private:
 private:
 	//--------------------------------------------------------------------------//
 
-	//-1->其它 0->失败 1->CR 2->LF
+	//-1->其它字符 0->失败 1->CR 2->LF
 	int32_t ParseCRLF(StateContext &contextState, char c) noexcept
 	{
 		if (c == '\r')//保证\r\n成对出现
@@ -209,28 +209,21 @@ private:
 		}
 	}
 
-	bool ParseSkipSpace(StateContext &contextState, char c, StateContext::ParseState enNextState) noexcept
+	//-1->遇到非空白  0->出错 1->成功
+	int32_t ParseSkipSpace(StateContext &contextState, char c) noexcept
 	{
 		if (c == '\r' || c == '\n')//非法
 		{
 			contextState.SetParseError(StateContext::ParseError::UNEXPECTED_CHAR);
-			return false;
+			return 0;
 		}
 
 		if (isspace(c))//跳过非CRLF空白
 		{
-			return true;
+			return 1;
 		}
 
-		if (!isalpha(c))//确保字符正确
-		{
-			contextState.SetParseError(StateContext::ParseError::UNEXPECTED_CHAR);
-			return false;
-		}
-
-		contextState.strTempBuffer.push_back(c);
-		contextState.enParseState = enNextState;
-		return true;
+		return -1;
 	}
 
 	//--------------------------------------------------------------------------//
@@ -252,6 +245,7 @@ private:
 		//遇到第一个非空白，转到METHOD处理
 		contextState.enParseState = StateContext::ParseState::METHOD;
 		bReuseChar = true;//重用字符，交给METHOD解析
+
 		return true;
 	}
 
@@ -271,7 +265,7 @@ private:
 				return false;
 			}
 
-			
+			//清理缓冲区
 			contextState.strTempBuffer.clear();
 
 			//转换并重用字符
@@ -293,12 +287,23 @@ private:
 		}
 
 		contextState.strTempBuffer.push_back(c);
+
 		return true;
 	}
 
 	bool ParseMethodEnd(StateContext &contextState, char c, bool &bReuseChar)
 	{
+		int32_t i32Ret = ParseSkipSpace(contextState, c);
+		if (i32Ret != -1)//没有遇到非空白
+		{
+			return i32Ret == 1;//返回处理状态
+		}
+		
+		//遇到非空白，迁移状态，重用字符
+		contextState.enParseState = StateContext::ParseState::PATH;
+		bReuseChar = true;
 
+		return true;
 	}
 
 	//处理路径，解析%与/
@@ -476,27 +481,27 @@ public:
 
 	bool ParsingStream(StateContext &contextState, const std::string &strStream, size_t &szConsumedLength)
 	{
-		size_t szCurrent = 0;
+		szConsumedLength = 0;
 
 		if (strStream.empty())
 		{
-			szConsumedLength = 0;
 			return false;
 		}
 
+		for (auto it : strStream)
+		{
+			if (!ParseChar(contextState, it))
+			{
+				break;
+			}
 
+			++szConsumedLength;
+		}
 
-
-
-
-
-
+		//出错或完成
+		//返回退出状态
+		return contextState.enParseState == StateContext::ParseState::COMPLETE;
 	}
-
-
-
-
-
 
 
 };
