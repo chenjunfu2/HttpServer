@@ -55,37 +55,40 @@ protected:
 	ParseState enParseState = ParseState::READY;
 	ParseError enParseError = ParseError::NO_ERR;
 
-	size_t szContentLength = 0;
-	size_t szHeaderSize = 0;
+	std::string strTempBuffer{};
+
+	size_t szMaxPathLength = 0;//最大路径长度
+
+	size_t szHeaderSize = 0;//头部长度
+	size_t szContentLength = 0;//内容长度（Body长度）
 	
 	size_t szConsecutiveCRLF = 0;//连续的换行
 	bool bWaitLF = false;//遇到CR，等待LF
 
-	std::string strTempBuffer{};
-	
-
 protected:
+	DEFAULT_CSTC(StateContext);
+
 	void Clear(void) noexcept
 	{
 		enParseState = ParseState::READY;
+		enParseError = ParseError::NO_ERR;
 
-		szContentLength = 0;
+		strTempBuffer.clear();
+
+		szMaxPathLength = 0;
+
 		szHeaderSize = 0;
+		szContentLength = 0;
 
 		szConsecutiveCRLF = 0;
 		bWaitLF = false;
-
-		strTempBuffer.clear();
 	}
-
-	DEFAULT_CSTC(StateContext);
 
 	void SetParseError(ParseError _enParseError)
 	{
 		enParseState = ParseState::ERROR;
 		enParseError = _enParseError;
 	}
-
 
 public:
 	DELETE_COPY(StateContext);
@@ -95,8 +98,9 @@ public:
 	GETTER_COPY(ParseState, enParseState);
 	GETTER_COPY(ParseError, enParseError);
 
-	GETTER_COPY(ContentLength, szContentLength);
+	GETTER_COPY(MaxPathLength, szMaxPathLength);
 	GETTER_COPY(HeaderSize, szHeaderSize);
+	GETTER_COPY(ContentLength, szContentLength);
 
 };
 
@@ -447,6 +451,21 @@ private:
 	}
 
 	//--------------------------------------------------------------------------//
+	
+	static StateContext GetNewContext(size_t szMaxPathLength) noexcept
+	{
+		StateContext ctxNew{};
+		ctxNew.szMaxPathLength = szMaxPathLength;
+		return ctxNew;
+	}
+
+	static void ReuseContext(StateContext &ctxReuse, size_t szMaxPathLength) noexcept
+	{
+		ctxReuse.Clear();
+		ctxReuse.szMaxPathLength = szMaxPathLength;
+	}
+
+	//--------------------------------------------------------------------------//
 
 public:
 	void Clear(void) noexcept
@@ -467,16 +486,6 @@ public:
 
 	DEFAULT_MOVE(HttpRequest);
 	DELETE_COPY(HttpRequest);
-
-	static StateContext GetNewContext(void) noexcept
-	{
-		return {};
-	}
-
-	static void ClearContext(StateContext &contextState) noexcept
-	{
-		contextState.Clear();
-	}
 
 	bool ParsingStream(StateContext &contextState, const std::string &strStream, size_t &szConsumedLength)
 	{
