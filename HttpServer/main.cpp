@@ -141,4 +141,22 @@ int main(void)
 //Accept-Encoding: gzip, deflate, br, zstd
 //Accept-Language: zh-CN,zh;q=0.9
 //
+//
 
+
+//GET /favicon.ico HTTP/1.1
+//Host: localhost:25565
+//Connection: keep-alive
+//sec-ch-ua-platform: "Windows"
+//User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+//sec-ch-ua: "Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"
+//sec-ch-ua-mobile: ?0
+//Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+//Sec-Fetch-Site: same-origin
+//Sec-Fetch-Mode: no-cors
+//Sec-Fetch-Dest: image
+//Referer: http://localhost:25565/
+//Accept-Encoding: gzip, deflate, br, zstd
+//Accept-Language: zh-CN,zh;q=0.9
+//
+//
