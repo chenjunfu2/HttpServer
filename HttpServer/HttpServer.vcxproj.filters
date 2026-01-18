@@ -31,6 +31,9 @@
     <Filter Include="头文件\Common\Helper">
       <UniqueIdentifier>{23b6cb88-c4b1-49b2-80c3-11b9db686ec2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="资源文件\docs">
+      <UniqueIdentifier>{f7b78161-766e-4a21-a3e1-71522ae81ff7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -88,6 +91,9 @@
     <None Include="..\README.md">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\docs\rfc7230.txt.pdf">
+      <Filter>资源文件\docs</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\TODO.txt">
@@ -95,6 +101,9 @@
     </Text>
     <Text Include="..\Request.txt">
       <Filter>资源文件</Filter>
+    </Text>
+    <Text Include="..\docs\rfc7230.txt">
+      <Filter>资源文件\docs</Filter>
     </Text>
   </ItemGroup>
 </Project>

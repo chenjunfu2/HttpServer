@@ -180,10 +180,12 @@
     <ClInclude Include="Windows_TcpSocket.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\docs\rfc7230.txt.pdf" />
     <None Include="..\LICENSE" />
     <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="..\docs\rfc7230.txt" />
     <Text Include="..\Request.txt" />
     <Text Include="..\TODO.txt" />
   </ItemGroup>
