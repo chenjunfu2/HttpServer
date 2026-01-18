@@ -15,11 +15,8 @@ public:
 		READY = 0,		//就绪状态
 
 		METHOD,			//解析方法
-		METHOD_END,		//方法后空白
 		PATH,			//解析路径
-		PATH_END,		//路径后空白
 		VERSION,		//解析版本
-		VERSION_END,	//版本后空白
 
 		START_LINE_END,	//开始行结束
 
@@ -27,11 +24,11 @@ public:
 		FIELD_KEY_END,	//header键后空白
 		FIELD_VAL,		//解析header值
 		FIELD_VAL_END,	//header值后空白
-		FIELD_LINE_END,//解析header行结束
+		FIELD_LINE_END,	//解析header行结束
 
 		HEADER_FIELD_END,//header解析结束
 
-		CONTENT,		//解析content(body)
+		BODY,			//解析body(content)
 
 		COMPLETE,		//解析完成
 
@@ -41,13 +38,17 @@ public:
 	enum class ParseError
 	{
 		NO_ERR = 0,
+
+		UNEXPECTED_CHAR,//非法字符
+		INVALID_FORMAT,//非法格式
+		INCOMPLETE_REQUEST,//不完整的请求
+
+		HEADER_TOO_LARGE,//请求头过长
+		BODY_TOO_LARGE,//请求体过长
+
 		INVALID_METHOD,//无效方法
 		INVALID_PATH,//无效路径
 		INVALID_VERSION,//无效版本
-		HEADER_TOO_LARGE,//请求头过长
-		BODY_TOO_LARGE,//请求体过长
-		UNEXPECTED_CHAR,//非法字符
-		INCOMPLETE_REQUEST,//不完整的请求
 	};
 
 protected:
@@ -60,8 +61,6 @@ protected:
 	size_t szMaxHeaderLength = 0;//最大头部长度
 	size_t szMaxContentLength = 0;//最大内容长度（Body长度）
 	size_t szMaxRequestLength = 0;//完整请求最大长度
-
-	size_t szContentLength = 0;//内容长度（Body长度）
 	
 	size_t szConsecutiveCRLF = 0;//连续的换行
 	bool bWaitLF = false;//遇到CR，等待LF
@@ -80,8 +79,6 @@ protected:
 		szMaxHeaderLength = 0;
 		szMaxContentLength = 0;
 		szMaxRequestLength = 0;
-
-		szContentLength = 0;
 
 		szConsecutiveCRLF = 0;
 		bWaitLF = false;
@@ -105,8 +102,6 @@ public:
 	GETTER_COPY(MaxHeaderLength, szMaxHeaderLength);
 	GETTER_COPY(MaxContentLength, szMaxContentLength);
 	GETTER_COPY(MaxRequestLength, szMaxRequestLength);
-
-	GETTER_COPY(ContentLength, szContentLength);
 
 };
 
@@ -149,6 +144,7 @@ public:
 	struct HeaderField
 	{
 		ConnectionType enConnectionType = ConnectionType::UNKNOWN;
+		size_t szContentLength = 0;//内容长度（Body长度）
 		std::string strHost{};
 		std::unordered_map<std::string, std::string> mapFields{};
 	};
@@ -171,6 +167,7 @@ public:
 		stStartLine.strVersion.clear();
 		
 		stHeaderField.enConnectionType = ConnectionType::UNKNOWN;
+		stHeaderField.szContentLength = 0;
 		stHeaderField.strHost.clear();
 		stHeaderField.mapFields.clear();
 
@@ -267,19 +264,81 @@ private:
 
 	//--------------------------------------------------------------------------//
 
+
+	/*
+		|------------------------------------------------------------------
+		|HTTP-message = 
+		|				start-line
+		|				*( header-field CRLF )
+		|				CRLF
+		|				[ message-body ]
+		|------------------------------------------------------------------
+		|
+		|	|------------------------------------------------------------------
+		|	|start-line = request-line / status-line
+		|	|------------------------------------------------------------------
+		|	|
+		|	|	|------------------------------------------------------------------
+		|	|	|request-line =
+		|	|	|				method SP request-target SP HTTP-version
+		|	|	|				CRLF
+		|	|	|
+		|	|	|	method = token
+		|	|	|------------------------------------------------------------------
+		|	|	|
+		|	|	|------------------------------------------------------------------
+		|	|	|status-line =
+		|	|	|				HTTP-version SP status-code SP reason-phrase
+		|	|	|				CRLF
+		|	|	|
+		|	|	|	status-code = 3DIGIT
+		|	|	|	reason-phrase  = *( HTAB / SP / VCHAR / obs-text )
+		|	|	|------------------------------------------------------------------
+		|	|
+		|	|------------------------------------------------------------------
+		|	|header-field = field-name ":" OWS field-value OWS
+		|	|
+		|	|	field-name		= token
+		|	|	field-value		= *( field-content / obs-fold )
+		|	|	field-content	= field-vchar [ 1*( SP / HTAB ) field-vchar ]
+		|	|	field-vchar		= VCHAR / obs-text
+		|	|
+		|	|		obs-fold	= CRLF 1*( SP / HTAB )
+		|	|					; obsolete line folding
+		|	|					; see Section 3.2.4
+		|	|------------------------------------------------------------------
+		|
+		|------------------------------------------------------------------
+		|OWS	= *( SP / HTAB )
+		|	; optional whitespace
+		|RWS	= 1*( SP / HTAB )
+		|	; required whitespace
+		|BWS	= OWS
+		|	; "bad" whitespace
+		|------------------------------------------------------------------
+	*/
+	
+	//在Start-Line之前，至多出现一个CRLF，且不能有多余的空白
 	bool ParseReady(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
-		int32_t i32Ret = ParseCRLF(contextState, c);
-		if (i32Ret >= 0)
+		if (contextState.szConsecutiveCRLF >= 1)
 		{
-			return (bool)i32Ret;
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+			return false;
 		}
-		//else -1其他字符，走下面处理
 
-		if (isspace(c))//跳过空白（前面已经筛掉CRLF，放心跳过剩余非CRLF空白）
+
+		int32_t i32Ret = ParseCRLF(contextState, c);
+		if (i32Ret == 0)
 		{
+			return false;
+		}
+		else if (i32Ret == 1)
+		{
+			++contextState.szConsecutiveCRLF;
 			return true;
 		}
+		//else (i32Ret == -1)其他字符，走下面处理
 
 		//遇到第一个非空白，转到METHOD处理
 		contextState.enParseState = StateContext::ParseState::METHOD;
@@ -310,7 +369,7 @@ private:
 			contextState.strTempBuffer.clear();
 
 			//转换并重用字符
-			contextState.enParseState = StateContext::ParseState::METHOD_END;
+			contextState.enParseState = StateContext::ParseState::PATH;
 			bReuseChar = true;
 			return true;
 		}
@@ -332,28 +391,7 @@ private:
 		return true;
 	}
 
-	bool ParseMethodEnd(StateContext &contextState, char c, bool &bReuseChar)
-	{
-		int32_t i32Ret = ParseSkipSpace(contextState, c);
-		if (i32Ret != -1)//没有遇到非空白
-		{
-			return i32Ret == 1;//返回处理状态
-		}
-		
-		//遇到非空白，迁移状态，重用字符
-		contextState.enParseState = StateContext::ParseState::PATH;
-		bReuseChar = true;
-
-		return true;
-	}
-
 	bool ParsePath(StateContext &contextState, char c, bool &bReuseChar) noexcept
-	{
-
-		return true;
-	}
-
-	bool ParsePathEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
@@ -361,12 +399,6 @@ private:
 
 	//拒绝所有以空白起始行的消息
 	bool ParseVersion(StateContext &contextState, char c, bool &bReuseChar) noexcept
-	{
-
-		return true;
-	}
-
-	bool ParseVersionEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
@@ -414,7 +446,7 @@ private:
 		return true;
 	}
 
-	bool ParseContent(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	bool ParseBody(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 
 		return true;
@@ -438,22 +470,13 @@ private:
 			case StateContext::ParseState::METHOD:
 				bRet = ParseMethod(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::METHOD_END:
-				bRet = ParseMethodEnd(contextState, c, bReuseChar);
-				break;
 			case StateContext::ParseState::PATH:
 				bRet = ParsePath(contextState, c, bReuseChar);
-				break;
-			case StateContext::ParseState::PATH_END:
-				bRet = ParsePathEnd(contextState, c, bReuseChar);
 				break;
 			case StateContext::ParseState::VERSION:
 				bRet = ParseVersion(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::VERSION_END://处理到第一个CRLF切换下一状态并返回
-				bRet = ParseVersionEnd(contextState, c, bReuseChar);
-				break;
-			case StateContext::ParseState::START_LINE_END://保证遇到的第一个是字符然后切换下一状态，否则失败
+			case StateContext::ParseState::START_LINE_END:
 				bRet = ParseStartLineEnd(contextState, c, bReuseChar);
 				break;
 			case StateContext::ParseState::FIELD_KEY:
@@ -474,8 +497,8 @@ private:
 			case StateContext::ParseState::HEADER_FIELD_END:
 				bRet = ParseHeaderFieldEnd(contextState, c, bReuseChar);
 				break;
-			case StateContext::ParseState::CONTENT:
-				bRet = ParseContent(contextState, c, bReuseChar);
+			case StateContext::ParseState::BODY:
+				bRet = ParseBody(contextState, c, bReuseChar);
 				break;
 			case StateContext::ParseState::COMPLETE:
 			case StateContext::ParseState::ERROR:
