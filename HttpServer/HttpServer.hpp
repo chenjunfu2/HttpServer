@@ -734,12 +734,6 @@ private:
 			//第一次到这里必须要是遇到CR，因为如果第一次直接遇到LF那么ParseCRLF必须正确处理错误
 			MyAssert(i32Ret == 1, "Not CR, is LF, what the fuck?");
 
-			goto ValOk;//跳转到统一结束处理
-		}
-
-		if (c == ' ' || c == '\t')//遇到OWS
-		{
-		ValOk:
 			auto [itCurrent, isOk] = stHeaderField.mapFields.try_emplace(
 				std::move(contextState.strTempBuffer),
 				std::move(contextState.strTempBuffer2)
@@ -756,6 +750,11 @@ private:
 			contextState.enParseState = StateContext::ParseState::FIELD_VAL_END;
 
 			return true;
+		}
+
+		if (c == ' ' || c == '\t')//遇到OWS
+		{
+			return true;//直接忽略（删除）
 		}
 
 		//一切正常，判断字符合法性，然后插入缓存2
