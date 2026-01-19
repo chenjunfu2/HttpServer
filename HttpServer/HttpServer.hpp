@@ -187,7 +187,7 @@ public:
 private:
 	bool SetMethod(const std::string &strMethod) noexcept
 	{
-		static inline const std::unordered_map<std::string, Method> mapMethod =
+		static const std::unordered_map<std::string, Method> mapMethod =
 		{
 			{"GET", Method::GET},
 			{"HEAD", Method::HEAD},
@@ -222,7 +222,7 @@ private:
 
 	void SetConnectionType(void) noexcept
 	{
-		static inline const std::unordered_map<std::string, ConnectionType> mapConnectionType =
+		static const std::unordered_map<std::string, ConnectionType> mapConnectionType =
 		{
 			{"keep-alive", ConnectionType::KEEP_ALIVE},
 			{"close", ConnectionType::CLOSE},

@@ -258,7 +258,7 @@ public:
 
 	void Register(std::string strHttpPath, std::filesystem::path pathFileSystem, std::string strMimeType)
 	{
-		mapFile.insert_or_assign(std::move(strHttpPath), VirtualFile{ std::move(pathFileSystem), std::move(strMimeType) });
+		mapFile.insert_or_assign(std::move(strHttpPath), std::move(VirtualFile{ std::move(pathFileSystem), std::move(strMimeType) }));
 	}
 
 	void UnRegister(const std::string &strHttpPath)
