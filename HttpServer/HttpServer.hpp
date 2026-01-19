@@ -89,7 +89,7 @@ protected:
 
 		szCurHeaderLenght = 0;
 
-		szConsecutiveOWS = 0;
+		szConsecutiveRWS = 0;
 		szConsecutiveCRLF = 0;
 
 		bWaitLF = false;
