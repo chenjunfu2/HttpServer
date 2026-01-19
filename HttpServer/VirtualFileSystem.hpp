@@ -137,6 +137,24 @@ public:
 		cacheFile()
 	{}
 
+	VirtualFile(VirtualFile &&_Move) :
+		enStorageMode(_Move.enStorageMode),
+		pathFile(std::move(_Move.pathFile)),
+		strMimeType(std::move(_Move.strMimeType)),
+		cacheFile(std::move(_Move.cacheFile))
+	{}
+
+	VirtualFile& operator=(VirtualFile &&_Move)
+	{
+		enStorageMode = _Move.enStorageMode;
+
+		pathFile = std::move(_Move.pathFile);
+		strMimeType = std::move(_Move.strMimeType);
+		cacheFile = std::move(_Move.cacheFile);
+
+		return *this;
+	}
+
 	~VirtualFile(void)
 	{}
 
