@@ -2,7 +2,12 @@
 
 #include "Windows_TcpSocket.h"
 #include "VirtualFileSystem.hpp"
+
+#include "MyAssert.hpp"
+
 #include <ctype.h>
+#include <charconv>
+
 
 class HttpRequest;
 
@@ -41,14 +46,11 @@ public:
 
 		UNEXPECTED_CHAR,//非法字符
 		INVALID_FORMAT,//非法格式
+		DUPLICATE_FIELDS,//重复的字段
 		INCOMPLETE_REQUEST,//不完整的请求
 
 		HEADER_TOO_LARGE,//请求头过长
 		BODY_TOO_LARGE,//请求体过长
-
-		INVALID_METHOD,//无效方法
-		INVALID_PATH,//无效路径
-		INVALID_VERSION,//无效版本
 	};
 
 protected:
@@ -56,6 +58,7 @@ protected:
 	ParseError enParseError = ParseError::NO_ERR;
 
 	std::string strTempBuffer{};
+	std::string strTempBuffer2{};
 
 	size_t szMaxPathLength = 0;//最大路径长度
 	size_t szMaxHeaderLength = 0;//最大头部长度
@@ -74,6 +77,7 @@ protected:
 		enParseError = ParseError::NO_ERR;
 
 		strTempBuffer.clear();
+		strTempBuffer2.clear();
 
 		szMaxPathLength = 0;
 		szMaxHeaderLength = 0;
@@ -124,6 +128,8 @@ public:
 
 	static inline constexpr size_t MIN_METHOD_LENGTH = 3;
 	static inline constexpr size_t MAX_METHOD_LENGTH = 7;
+	static inline constexpr size_t VERSION_LENGTH = sizeof("HTTP/x.x") - 1;
+
 
 	enum class ConnectionType
 	{
@@ -135,10 +141,10 @@ public:
 public:
 	struct StartLine
 	{
-		Method enMethod = Method::UNKNOWN;
-		std::string strPath{};
-		std::string strVersion{};
-		
+		Method enMethod = Method::UNKNOWN;//请求方法
+		std::string strPath{};//请求路径
+		uint8_t u8MajorVersion;//主版本号
+		uint8_t u8MinorVersion;//次版本号
 	};
 	
 	struct HeaderField
@@ -164,7 +170,8 @@ public:
 	{
 		stStartLine.enMethod = Method::UNKNOWN;
 		stStartLine.strPath.clear();
-		stStartLine.strVersion.clear();
+		stStartLine.u8MajorVersion = 0;
+		stStartLine.u8MinorVersion = 0;
 		
 		stHeaderField.enConnectionType = ConnectionType::UNKNOWN;
 		stHeaderField.szContentLength = 0;
@@ -190,8 +197,12 @@ private:
 			{"PATCH", Method::PATCH},
 		};
 
+		//先初始化为未知
+		stStartLine.enMethod = Method::UNKNOWN;
+
+		//检查长度
 		size_t strMethodSize = strMethod.size();
-		if (strMethodSize < 3 || strMethodSize > 7)
+		if (strMethodSize < 3 || strMethodSize > 7)//短于最短，长于最长
 		{
 			return false;
 		}
@@ -202,7 +213,72 @@ private:
 			return false;
 		}
 
-		stStartLine.enMethod = it->second;
+		stStartLine.enMethod = it->second;//设置实际查找值
+		return true;
+	}
+
+	bool SetConnectionType(void) noexcept
+	{
+		static inline const std::unordered_map<std::string, ConnectionType> mapConnectionType =
+		{
+			{"keep-alive", ConnectionType::KEEP_ALIVE},
+			{"close", ConnectionType::CLOSE},
+		};
+
+
+		//先设置未知
+		stHeaderField.enConnectionType = ConnectionType::UNKNOWN;
+
+		auto itConnection = stHeaderField.mapFields.find("Connection");
+		if (itConnection == stHeaderField.mapFields.end())
+		{
+			return false;
+		}
+
+		//已找到
+		auto &strConnectionType = itConnection->second;
+
+		//检查长度
+		size_t strConnectionTypeSize = strConnectionType.size();
+		if (strConnectionTypeSize < 5 || strConnectionTypeSize > 10)//短于最短，长于最长
+		{
+			return false;
+		}
+
+		auto it = mapConnectionType.find(strConnectionType);
+		if (it == mapConnectionType.end())
+		{
+			return false;
+		}
+
+		stHeaderField.enConnectionType = it->second;//设置实际查找值
+		return true;
+	}
+
+
+	bool SetContentLength(void)//注意，这里是解析发生错误返回false，而非找不到返回false
+	{
+		//先设置长度为0
+		stHeaderField.szContentLength = 0;
+
+		auto itContentLength = stHeaderField.mapFields.find("Content-Length");
+		if (itContentLength == stHeaderField.mapFields.end())
+		{
+			return true;//找不到直接true，值为0
+		}
+
+		auto &strContentLength = itContentLength->second;
+
+		//解析为数值（严格解析）
+		const char *pBeg = strContentLength.data();
+		const char *pEnd = strContentLength.data() + strContentLength.size();
+
+		auto [pUse, errCode] = std::from_chars(pBeg, pEnd, stHeaderField.szContentLength);
+		if (errCode != std::errc() || pUse != pEnd)
+		{
+			return false;
+		}
+
 		return true;
 	}
 
@@ -230,7 +306,6 @@ private:
 			if (contextState.bWaitLF == true)
 			{
 				contextState.bWaitLF = false;
-				++contextState.szConsecutiveCRLF;
 				return 2;
 			}
 			else
@@ -241,25 +316,21 @@ private:
 		}
 		else//其它字符
 		{
+			if (contextState.bWaitLF == true)//什么？CR之后不是LF？
+			{
+				contextState.bWaitLF = false;//清除标志并设置错误
+
+				contextState.SetParseError(StateContext::ParseError::UNEXPECTED_CHAR);
+				return 0;
+			}
+
 			return -1;
 		}
 	}
 
-	//-1->遇到非空白  0->出错 1->成功
-	int32_t ParseSkipSpace(StateContext &contextState, char c) noexcept
+	bool IsNoSpacePrintChar(char c) noexcept
 	{
-		if (c == '\r' || c == '\n')//非法
-		{
-			contextState.SetParseError(StateContext::ParseError::UNEXPECTED_CHAR);
-			return 0;
-		}
-
-		if (isspace(c))//跳过非CRLF空白
-		{
-			return 1;
-		}
-
-		return -1;
+		return c >= 0x21 && c <= 0x7E;
 	}
 
 	//--------------------------------------------------------------------------//
@@ -284,6 +355,9 @@ private:
 		|	|	|				CRLF
 		|	|	|
 		|	|	|	method = token
+		|	|	|	request-target = origin-form / absolute-form / authority-form / asterisk-form
+		|	|	|	HTTP-version  = HTTP-name "/" DIGIT "." DIGIT
+		|	|	|		HTTP-name     = %x48.54.54.50 ; "HTTP", case-sensitive
 		|	|	|------------------------------------------------------------------
 		|	|	|
 		|	|	|------------------------------------------------------------------
@@ -316,132 +390,405 @@ private:
 		|BWS	= OWS
 		|	; "bad" whitespace
 		|------------------------------------------------------------------
+		|
+		|------------------------------------------------------------------
+		|token	=	1*tchar
+		|
+		|tchar	=	"!" / "#" / "$" / "%" / "&" / "'" / "*"
+		|			/ "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+		|			/ DIGIT / ALPHA
+		|			; any VCHAR, except delimiters
+		|------------------------------------------------------------------
+		|
+		|------------------------------------------------------------------
+		|quoted-string	= DQUOTE *( qdtext / quoted-pair ) DQUOTE
+		|qdtext			= HTAB / SP /%x21 / %x23-5B / %x5D-7E / obs-text
+		|obs-text		= %x80-FF
+		|comment		= "(" *( ctext / quoted-pair / comment ) ")"
+		|ctext			= HTAB / SP / %x21-27 / %x2A-5B / %x5D-7E / obs-text
+		|quoted-pair	= "\" ( HTAB / SP / VCHAR / obs-text )
+		|------------------------------------------------------------------
 	*/
 	
 	//在Start-Line之前，至多出现一个CRLF，且不能有多余的空白
+	/*
+		In the interest of robustness, a server that is expecting to receive and parse 
+		a request-line SHOULD ignore at least one empty line (CRLF) received prior 
+		to the request-line.
+	*/
 	bool ParseReady(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
-		if (contextState.szConsecutiveCRLF >= 1)
-		{
-			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
-			return false;
-		}
-
-
 		int32_t i32Ret = ParseCRLF(contextState, c);
 		if (i32Ret == 0)
 		{
-			return false;
+			return false;//ParseCRLF已设置错误
 		}
-		else if (i32Ret == 1)
+		else if (i32Ret == 1)//遇到CR不处理
 		{
-			++contextState.szConsecutiveCRLF;
 			return true;
 		}
-		//else (i32Ret == -1)其他字符，走下面处理
+		else if (i32Ret == 2)
+		{
+			if (++contextState.szConsecutiveCRLF > 1)//多个CRLF？
+			{
+				contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+				return false;
+			}
 
-		//遇到第一个非空白，转到METHOD处理
+			return true;
+		}
+		//else //(i32Ret == -1)其他字符，走下面处理
+
+		//遇到第一个非空白，迁移状态
 		contextState.enParseState = StateContext::ParseState::METHOD;
-		bReuseChar = true;//重用字符，交给METHOD解析
+		contextState.szConsecutiveCRLF = 0;//清理CRLF计数器
+		bReuseChar = true;//重用字符
 
 		return true;
 	}
 
 	//请求行以方法标识符起始，后接单个空格(SP)、请求目标、再一个单个空格(SP)、协议版本，最终以CRLF结尾。
+	/*
+		A request-line begins with a method token, followed by a single space (SP), 
+		the request-target, another single space (SP), the protocol version, and ends 
+		with CRLF.
+	*/
 
 	bool ParseMethod(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
-		if (c == '\r' || c == '\n')//非法
+		if (c == ' ')//遇到空白
 		{
-			contextState.SetParseError(StateContext::ParseError::UNEXPECTED_CHAR);
-			return false;
-		}
-
-		if (isspace(c))//遇到空白，请求方法结束
-		{
+			//尝试解析并设置方法
 			if (!SetMethod(contextState.strTempBuffer))
 			{
-				contextState.SetParseError(StateContext::ParseError::INVALID_METHOD);
+				contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
 				return false;
 			}
 
-			//清理缓冲区
+			//成功后清理缓冲区
 			contextState.strTempBuffer.clear();
 
-			//转换并重用字符
+			//转换到下一状态（注意此空白字符被丢弃而非重用，不赋值bReuseChar=true）
 			contextState.enParseState = StateContext::ParseState::PATH;
-			bReuseChar = true;
+			
 			return true;
 		}
 
-		if (!isalpha(c))//非法字符
+		if (!isalpha(c))//非法字符（方法只能是字母）
 		{
-			contextState.SetParseError(StateContext::ParseError::INVALID_METHOD);
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
 			return false;
 		}
 
 		if (contextState.strTempBuffer.size() >= MAX_METHOD_LENGTH)//过长请求方法
 		{
-			contextState.SetParseError(StateContext::ParseError::INVALID_METHOD);
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
 			return false;
 		}
 
+		//临时缓存+1
 		contextState.strTempBuffer.push_back(c);
 
 		return true;
 	}
 
+
+
 	bool ParsePath(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (c == ' ')//遇到空白
+		{
+			//设置路径字符串
+			stStartLine.strPath = std::move(contextState.strTempBuffer);
+			contextState.strTempBuffer.clear();
+			//丢弃空白，然后迁移到http版本状态
+			contextState.enParseState = StateContext::ParseState::VERSION;
+
+			return true;
+		}
+
+		//字符合法性
+		if (!IsNoSpacePrintChar(c))
+		{
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+			return false;
+		}
+
+		//临时缓存+1
+		contextState.strTempBuffer.push_back(c);
 
 		return true;
 	}
 
-	//拒绝所有以空白起始行的消息
+
+	//标准要求版本号必须以"HTTP/"开头且只有两个"数字"，并以"."分割
+	/*
+		The HTTP version number consists of two decimal digits separated by a "." 
+		(period or decimal point). The first digit ("major version") indicates the HTTP 
+		messaging syntax, whereas the second digit ("minor version") indicates the 
+		highest minor version within that major version to which the sender is 
+		conformant and able to understand for future communication.
+	*/
 	bool ParseVersion(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		int32_t i32Ret = ParseCRLF(contextState, c);
+		if (i32Ret != -1)
+		{
+			if (i32Ret == 0)
+			{
+				return false;//错误已在ParseCRLF内设置
+			}
+
+			//第一次到这里必须要是遇到CR，因为如果第一次直接遇到LF那么ParseCRLF必须正确处理错误
+			MyAssert(i32Ret == 1, "Not CR, is LF, what the fuck?");
+
+			//必须相等
+			if (contextState.strTempBuffer.size() != VERSION_LENGTH)
+			{
+				contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+				return false;
+			}
+
+			//版本必须以"HTTP/"开头，否则错误
+			if (!contextState.strTempBuffer.starts_with("HTTP/"))
+			{
+				contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+				return false;
+			}
+
+			//解析出"数字"."数字"形式的主次版本号
+
+			//格式强制判断
+			if (!isdigit(contextState.strTempBuffer[5]) ||
+				contextState.strTempBuffer[6] != '.' ||
+				!isdigit(contextState.strTempBuffer[7]))
+			{
+				contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+				return false;
+			}
+
+			//获取主次版本
+			stStartLine.u8MajorVersion = contextState.strTempBuffer[5] - '0';
+			stStartLine.u8MinorVersion = contextState.strTempBuffer[7] - '0';
+
+			//清理，丢弃空白并迁移
+			contextState.strTempBuffer.clear();
+			contextState.enParseState = StateContext::ParseState::START_LINE_END;
+
+			return true;
+		}
+
+		//字符合法性
+		if (!IsNoSpacePrintChar(c))//隐含空白约束
+		{
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+			return false;
+		}
+
+		//过长版本号
+		if (contextState.strTempBuffer.size() >= VERSION_LENGTH)
+		{
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+			return false;
+		}
+
+		//临时缓存+1
+		contextState.strTempBuffer.push_back(c);
 
 		return true;
 	}
 
 	bool ParseStartLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		int32_t i32Ret = ParseCRLF(contextState, c);
+		if (i32Ret == 0)
+		{
+			return false;//ParseCRLF已设置错误
+		}
+		else if (i32Ret == 1)//遇到CR不处理
+		{
+			return true;
+		}
+		else if (i32Ret == 2)
+		{
+			if (++contextState.szConsecutiveCRLF > 1)//多个CRLF？
+			{
+				contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+				return false;
+			}
+
+			return true;
+		}
+		//else//(i32Ret == -1)遇到CRLF以外
+
+		//迁移到Key状态
+		contextState.enParseState = StateContext::ParseState::FIELD_KEY;
+		contextState.szConsecutiveCRLF = 0;//清理CRLF计数器
+		bReuseChar = true;//重用字符
 
 		return true;
 	}
 
 	bool ParseFieldKey(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (c == ':')
+		{
+			//已存在字段重复，请求有误
+			if (stHeaderField.mapFields.contains(contextState.strTempBuffer))
+			{
+				contextState.SetParseError(StateContext::ParseError::DUPLICATE_FIELDS);
+				return false;
+			}
+
+			//字段无误，等待值
+			//直接迁移到下一状态，不清理buffer，不重用字符
+			contextState.enParseState = StateContext::ParseState::FIELD_KEY_END;
+
+			return true;
+		}
+
+		//字符合法性
+		if (!IsNoSpacePrintChar(c))//注意此处隐含空白约束
+		{
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+			return false;
+		}
+
+		//临时缓存+1
+		contextState.strTempBuffer.push_back(c);
 
 		return true;
 	}
 
 	bool ParseFieldKeyEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		//根据标准描述，':'后面可以是OWS，也就是多个SP（空格）或者HTAB（\t水平制表符）
+		if (c == ' ' || c == '\t')//处理前导OWS
+		{
+			return true;
+		}
+
+		//遇到第一个非此类字符，重用字符并迁移到下一状态，由下一状态判断合法性
+		contextState.enParseState = StateContext::ParseState::FIELD_VAL;
+		bReuseChar = true;
 
 		return true;
 	}
 
 	bool ParseFieldVal(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		int32_t i32Ret = ParseCRLF(contextState, c);
+		if (i32Ret != -1)
+		{
+			if (i32Ret == 0)
+			{
+				return false;//ParseCRLF已设置错误
+			}
+
+			//第一次到这里必须要是遇到CR，因为如果第一次直接遇到LF那么ParseCRLF必须正确处理错误
+			MyAssert(i32Ret == 1, "Not CR, is LF, what the fuck?");
+
+			goto ValOk;//跳转到统一结束处理
+		}
+
+		if (c == ' ' || c == '\t')//遇到OWS
+		{
+		ValOk:
+			auto [itCurrent, isOk] = stHeaderField.mapFields.try_emplace(
+				std::move(contextState.strTempBuffer),
+				std::move(contextState.strTempBuffer2)
+			);
+
+			//明明已经做过约束，怎么能在这里插入失败？
+			MyAssert(isOk, "try_emplace fail, what happend?");
+
+			//清理两个缓存
+			contextState.strTempBuffer.clear();
+			contextState.strTempBuffer2.clear();
+
+			//丢弃字符并迁移到下一状态
+			contextState.enParseState = StateContext::ParseState::FIELD_VAL_END;
+
+			return true;
+		}
+
+		//一切正常，判断字符合法性，然后插入缓存2
+		if (!IsNoSpacePrintChar(c))//注意此处隐含空白约束
+		{
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+			return false;
+		}
+
+		//注意这里是缓存2，因为缓存1已经是key，2里面才是val
+		contextState.strTempBuffer2.push_back(c);
 
 		return true;
 	}
 
 	bool ParseFieldValEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (c == ' ' || c == '\t')//处理后置OWS
+		{
+			return true;
+		}
+
+		//遇到其他字符
+		contextState.enParseState = StateContext::ParseState::FIELD_LINE_END;//处理单行结束
+		bReuseChar = true;//重用字符
 
 		return true;
 	}
 
 	bool ParseFieldLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		//处理换行
+		int32_t i32Ret = ParseCRLF(contextState, c);
+		if (i32Ret == 0)
+		{
+			return false;//ParseCRLF已设置错误
+		}
+		else if (i32Ret == 1)//遇到CR不处理
+		{
+			return true;
+		}
+		else if (i32Ret == 2)
+		{
+			if (++contextState.szConsecutiveCRLF > 1)//多个CRLF，Header已结束，迁移到结束状态
+			{
+				contextState.enParseState = StateContext::ParseState::HEADER_FIELD_END;
+				contextState.szConsecutiveCRLF = 0;//清理计数器
+				bReuseChar = true;//注意这里的重用字符，并不会真的被用到，仅仅是不要读取下一字符，防止只有头部的情况（当前头部已结束）
+				return true;
+			}
+
+			return true;
+		}
+		//else//(i32Ret == -1)遇到CRLF以外
+
+		//遇到其他字符
+		contextState.enParseState = StateContext::ParseState::FIELD_KEY;//回到Key处理
+		contextState.szConsecutiveCRLF = 0;//清理计数器
+		bReuseChar = true;//重用字符
 
 		return true;
 	}
 
+	//字段结束，解析部分需要的固定字段，但是不从map中删除，放入指定解析块中，如果还有Body的长度，则转到Body读取
 	bool ParseHeaderFieldEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		//迁移到这里，为了防止超额读取，会重用字符，c必然是LF，否则错误
+		MyAssert(c == '\n', "c not LF, what the fuck?");
+
+		//解析所有的部分，把特定值拷贝或解析一份到特定结构体域上方便后续处理
+		//注意部分值可能不存在，以及部分值必须存在，否则出错
+		
+
+
+
+
+
+
+
 
 		return true;
 	}
