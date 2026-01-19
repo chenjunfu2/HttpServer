@@ -68,6 +68,7 @@ protected:
 
 	size_t szCurHeaderLenght = 0;//当前头部长度
 	
+	size_t szConsecutiveRWS = 0;//连续的RWS空白数
 	size_t szConsecutiveCRLF = 0;//连续的换行
 	bool bWaitLF = false;//遇到CR，等待LF
 
@@ -88,7 +89,9 @@ protected:
 
 		szCurHeaderLenght = 0;
 
+		szConsecutiveOWS = 0;
 		szConsecutiveCRLF = 0;
+
 		bWaitLF = false;
 	}
 
@@ -715,6 +718,7 @@ private:
 		return true;
 	}
 
+	//字段值中可能含有OWS空白，一个或多个，根据标准要求，需要保留，但是需要去掉尾部空白
 	bool ParseFieldVal(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 		if (++contextState.szCurHeaderLenght > contextState.szMaxHeaderLength)
@@ -734,6 +738,13 @@ private:
 			//第一次到这里必须要是遇到CR，因为如果第一次直接遇到LF那么ParseCRLF必须正确处理错误
 			MyAssert(i32Ret == 1, "Not CR, is LF, what the fuck?");
 
+			//在这里，检测szConsecutiveRWS，如果不为0，说明刚才遇到的一系列空白是OWS而非RWS，从字符串中删去
+			if (contextState.szConsecutiveRWS != 0)
+			{
+				contextState.strTempBuffer2.erase(contextState.strTempBuffer2.size() - contextState.szConsecutiveRWS);
+			}
+
+			//插入map中
 			auto [itCurrent, isOk] = stHeaderField.mapFields.try_emplace(
 				std::move(contextState.strTempBuffer),
 				std::move(contextState.strTempBuffer2)
@@ -752,9 +763,12 @@ private:
 			return true;
 		}
 
-		if (c == ' ' || c == '\t')//遇到OWS
+		if (c == ' ' || c == '\t')//遇到RWS或尾随OWS
 		{
-			return true;//直接忽略（删除）
+			//插入值中
+			contextState.strTempBuffer2.push_back(c);//注意这里是缓存2，因为缓存1已经是key，2里面才是val
+			++contextState.szConsecutiveRWS;//统计遇到的空白数
+			return true;
 		}
 
 		//一切正常，判断字符合法性，然后插入缓存2
@@ -766,6 +780,7 @@ private:
 
 		//注意这里是缓存2，因为缓存1已经是key，2里面才是val
 		contextState.strTempBuffer2.push_back(c);
+		contextState.szConsecutiveRWS = 0;//遇到了一个非空白，重置计数
 
 		return true;
 	}
