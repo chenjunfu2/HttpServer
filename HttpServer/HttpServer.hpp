@@ -34,6 +34,7 @@ public:
 		HEADER_FIELD_END,//header解析结束
 
 		BODY,			//解析body(content)
+		BODY_END,		//body解析完成
 
 		COMPLETE,		//解析完成
 
@@ -49,6 +50,7 @@ public:
 		DUPLICATE_FIELDS,//重复的字段
 		INCOMPLETE_REQUEST,//不完整的请求
 
+		STARTLINE_TOO_LARGE,//起始行过长
 		HEADER_TOO_LARGE,//请求头过长
 		BODY_TOO_LARGE,//请求体过长
 	};
@@ -63,7 +65,8 @@ protected:
 	size_t szMaxPathLength = 0;//最大路径长度
 	size_t szMaxHeaderLength = 0;//最大头部长度
 	size_t szMaxContentLength = 0;//最大内容长度（Body长度）
-	size_t szMaxRequestLength = 0;//完整请求最大长度
+
+	size_t szCurHeaderLenght = 0;//当前头部长度
 	
 	size_t szConsecutiveCRLF = 0;//连续的换行
 	bool bWaitLF = false;//遇到CR，等待LF
@@ -82,7 +85,8 @@ protected:
 		szMaxPathLength = 0;
 		szMaxHeaderLength = 0;
 		szMaxContentLength = 0;
-		szMaxRequestLength = 0;
+
+		szCurHeaderLenght = 0;
 
 		szConsecutiveCRLF = 0;
 		bWaitLF = false;
@@ -105,7 +109,6 @@ public:
 	GETTER_COPY(MaxPathLength, szMaxPathLength);
 	GETTER_COPY(MaxHeaderLength, szMaxHeaderLength);
 	GETTER_COPY(MaxContentLength, szMaxContentLength);
-	GETTER_COPY(MaxRequestLength, szMaxRequestLength);
 
 };
 
@@ -151,7 +154,7 @@ public:
 	{
 		ConnectionType enConnectionType = ConnectionType::UNKNOWN;
 		size_t szContentLength = 0;//内容长度（Body长度）
-		std::string strHost{};
+		std::string *pstrHost = NULL;
 		std::unordered_map<std::string, std::string> mapFields{};
 	};
 
@@ -175,7 +178,7 @@ public:
 		
 		stHeaderField.enConnectionType = ConnectionType::UNKNOWN;
 		stHeaderField.szContentLength = 0;
-		stHeaderField.strHost.clear();
+		stHeaderField.pstrHost = NULL;
 		stHeaderField.mapFields.clear();
 
 		stMessageBody.strContent.clear();
@@ -217,7 +220,7 @@ private:
 		return true;
 	}
 
-	bool SetConnectionType(void) noexcept
+	void SetConnectionType(void) noexcept
 	{
 		static inline const std::unordered_map<std::string, ConnectionType> mapConnectionType =
 		{
@@ -232,7 +235,7 @@ private:
 		auto itConnection = stHeaderField.mapFields.find("Connection");
 		if (itConnection == stHeaderField.mapFields.end())
 		{
-			return false;
+			return;
 		}
 
 		//已找到
@@ -242,21 +245,22 @@ private:
 		size_t strConnectionTypeSize = strConnectionType.size();
 		if (strConnectionTypeSize < 5 || strConnectionTypeSize > 10)//短于最短，长于最长
 		{
-			return false;
+			return;
 		}
 
 		auto it = mapConnectionType.find(strConnectionType);
 		if (it == mapConnectionType.end())
 		{
-			return false;
+			return;
 		}
 
 		stHeaderField.enConnectionType = it->second;//设置实际查找值
-		return true;
+
+		return;
 	}
 
 
-	bool SetContentLength(void)//注意，这里是解析发生错误返回false，而非找不到返回false
+	bool SetContentLength(StateContext &contextState)//注意，这里是解析发生错误返回false，而非找不到返回false
 	{
 		//先设置长度为0
 		stHeaderField.szContentLength = 0;
@@ -276,8 +280,26 @@ private:
 		auto [pUse, errCode] = std::from_chars(pBeg, pEnd, stHeaderField.szContentLength);
 		if (errCode != std::errc() || pUse != pEnd)
 		{
+			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
 			return false;
 		}
+
+		return true;
+	}
+
+	bool SetHost(StateContext &contextState)//标准要求Host必须要存在，否则失败
+	{
+		//先设置为NULL
+		stHeaderField.pstrHost = NULL;
+
+		auto itHost = stHeaderField.mapFields.find("Host");
+		if (itHost == stHeaderField.mapFields.end())
+		{
+			contextState.SetParseError(StateContext::ParseError::INCOMPLETE_REQUEST);//必须字段缺少，请求不完整
+			return false;
+		}
+
+		stHeaderField.pstrHost = &itHost->second;
 
 		return true;
 	}
@@ -493,7 +515,6 @@ private:
 	}
 
 
-
 	bool ParsePath(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
 		if (c == ' ')//遇到空白
@@ -511,6 +532,12 @@ private:
 		if (!IsNoSpacePrintChar(c))
 		{
 			contextState.SetParseError(StateContext::ParseError::INVALID_FORMAT);
+			return false;
+		}
+
+		if (contextState.strTempBuffer.size() >= contextState.szMaxPathLength)
+		{
+			contextState.SetParseError(StateContext::ParseError::STARTLINE_TOO_LARGE);
 			return false;
 		}
 
@@ -631,6 +658,12 @@ private:
 
 	bool ParseFieldKey(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (++contextState.szCurHeaderLenght > contextState.szMaxHeaderLength)
+		{
+			contextState.SetParseError(StateContext::ParseError::HEADER_TOO_LARGE);
+			return false;
+		}
+
 		if (c == ':')
 		{
 			//已存在字段重复，请求有误
@@ -662,6 +695,12 @@ private:
 
 	bool ParseFieldKeyEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (++contextState.szCurHeaderLenght > contextState.szMaxHeaderLength)
+		{
+			contextState.SetParseError(StateContext::ParseError::HEADER_TOO_LARGE);
+			return false;
+		}
+
 		//根据标准描述，':'后面可以是OWS，也就是多个SP（空格）或者HTAB（\t水平制表符）
 		if (c == ' ' || c == '\t')//处理前导OWS
 		{
@@ -670,6 +709,7 @@ private:
 
 		//遇到第一个非此类字符，重用字符并迁移到下一状态，由下一状态判断合法性
 		contextState.enParseState = StateContext::ParseState::FIELD_VAL;
+		--contextState.szCurHeaderLenght;//重用字符撤销一个长度
 		bReuseChar = true;
 
 		return true;
@@ -677,6 +717,12 @@ private:
 
 	bool ParseFieldVal(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (++contextState.szCurHeaderLenght > contextState.szMaxHeaderLength)
+		{
+			contextState.SetParseError(StateContext::ParseError::HEADER_TOO_LARGE);
+			return false;
+		}
+
 		int32_t i32Ret = ParseCRLF(contextState, c);
 		if (i32Ret != -1)
 		{
@@ -727,6 +773,12 @@ private:
 
 	bool ParseFieldValEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (++contextState.szCurHeaderLenght > contextState.szMaxHeaderLength)
+		{
+			contextState.SetParseError(StateContext::ParseError::HEADER_TOO_LARGE);
+			return false;
+		}
+
 		if (c == ' ' || c == '\t')//处理后置OWS
 		{
 			return true;
@@ -734,6 +786,7 @@ private:
 
 		//遇到其他字符
 		contextState.enParseState = StateContext::ParseState::FIELD_LINE_END;//处理单行结束
+		--contextState.szCurHeaderLenght;//重用字符撤销一个长度
 		bReuseChar = true;//重用字符
 
 		return true;
@@ -741,6 +794,12 @@ private:
 
 	bool ParseFieldLineEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (++contextState.szCurHeaderLenght > contextState.szMaxHeaderLength)
+		{
+			contextState.SetParseError(StateContext::ParseError::HEADER_TOO_LARGE);
+			return false;
+		}
+
 		//处理换行
 		int32_t i32Ret = ParseCRLF(contextState, c);
 		if (i32Ret == 0)
@@ -768,7 +827,9 @@ private:
 		//遇到其他字符
 		contextState.enParseState = StateContext::ParseState::FIELD_KEY;//回到Key处理
 		contextState.szConsecutiveCRLF = 0;//清理计数器
+		--contextState.szCurHeaderLenght;//重用字符撤销一个长度
 		bReuseChar = true;//重用字符
+
 
 		return true;
 	}
@@ -776,27 +837,84 @@ private:
 	//字段结束，解析部分需要的固定字段，但是不从map中删除，放入指定解析块中，如果还有Body的长度，则转到Body读取
 	bool ParseHeaderFieldEnd(StateContext &contextState, char c, bool &bReuseChar) noexcept
 	{
+		if (++contextState.szCurHeaderLenght > contextState.szMaxHeaderLength)
+		{
+			contextState.SetParseError(StateContext::ParseError::HEADER_TOO_LARGE);
+			return false;
+		}
+
 		//迁移到这里，为了防止超额读取，会重用字符，c必然是LF，否则错误
 		MyAssert(c == '\n', "c not LF, what the fuck?");
 
 		//解析所有的部分，把特定值拷贝或解析一份到特定结构体域上方便后续处理
 		//注意部分值可能不存在，以及部分值必须存在，否则出错
 		
+		//这个选项可有可无，无所谓，哪怕未知，也不用失败
+		SetConnectionType();
+		
+		//尝试获取body大小，注意函数失败返回false，不存在则无视
+		if (!SetContentLength(contextState))
+		{
+			return false;//SetContentLength内部设置错误码
+		}
 
+		if (!SetHost(contextState))
+		{
+			return false;//SetHost内部设置错误码
+		}
 
+		//解析完成，判断ContentLength是否有长度，有则转入Body解析
+		if (stHeaderField.szContentLength != 0)
+		{
+			//长度溢出
+			if (stHeaderField.szContentLength > contextState.szMaxContentLength)
+			{
+				contextState.SetParseError(StateContext::ParseError::BODY_TOO_LARGE);
+				return false;
+			}
 
+			//不重用字符（获取下一个）
+			contextState.enParseState = StateContext::ParseState::BODY;
+			return true;
+		}
 
-
-
-
-
+		contextState.enParseState = StateContext::ParseState::COMPLETE;
 		return true;
 	}
 
-	bool ParseBody(StateContext &contextState, char c, bool &bReuseChar) noexcept
+	void ParseBody(StateContext &contextState, const std::string &strStream, size_t &szConsumedLength) noexcept
 	{
+		//计算已读字节
+		size_t szCompletedLength = stHeaderField.szContentLength - contextState.strTempBuffer.size();
 
-		return true;
+		//计算剩余字节（取剩余大小或流大小中的较小值）
+		size_t szStreamRemaining = strStream.size() - szConsumedLength;
+		size_t szNeedLenght = szCompletedLength < szStreamRemaining
+							? szCompletedLength
+							: szStreamRemaining;
+
+		//直接合并
+		contextState.strTempBuffer.assign(strStream.data() + szConsumedLength, szNeedLenght);
+		szConsumedLength += szNeedLenght;
+
+		//读取字节数足够，切换状态
+		if (stHeaderField.szContentLength == contextState.strTempBuffer.size())
+		{
+			contextState.enParseState = StateContext::ParseState::BODY_END;
+			return;
+		}
+
+		return;
+	}
+
+	void ParseBodyEnd(StateContext &contextState) noexcept
+	{
+		//设置数据并清理缓存
+		stMessageBody.strContent = std::move(contextState.strTempBuffer);
+		contextState.strTempBuffer.clear();
+
+		//成功后迁移到状态COMPLETE
+		contextState.enParseState = StateContext::ParseState::COMPLETE;
 	}
 
 	//--------------------------------------------------------------------------//
@@ -845,8 +963,6 @@ private:
 				bRet = ParseHeaderFieldEnd(contextState, c, bReuseChar);
 				break;
 			case StateContext::ParseState::BODY:
-				bRet = ParseBody(contextState, c, bReuseChar);
-				break;
 			case StateContext::ParseState::COMPLETE:
 			case StateContext::ParseState::ERROR:
 			default:
@@ -858,20 +974,19 @@ private:
 		return bRet;
 	}
 
+public:
 	//--------------------------------------------------------------------------//
 	
 	static StateContext GetNewContext(
 		size_t szMaxPathLength,
 		size_t szMaxHeaderLength,
-		size_t szMaxContentLength,
-		size_t szMaxRequestLength) noexcept
+		size_t szMaxContentLength) noexcept
 	{
 		StateContext ctxNew{};
 
 		ctxNew.szMaxPathLength = szMaxPathLength;
 		ctxNew.szMaxHeaderLength = szMaxHeaderLength;
 		ctxNew.szMaxContentLength = szMaxContentLength;
-		ctxNew.szMaxRequestLength = szMaxRequestLength;
 
 		return ctxNew;
 	}
@@ -880,15 +995,13 @@ private:
 		StateContext &ctxReuse,
 		size_t szMaxPathLength,
 		size_t szMaxHeaderLength,
-		size_t szMaxContentLength,
-		size_t szMaxRequestLength) noexcept
+		size_t szMaxContentLength) noexcept
 	{
 		ctxReuse.Clear();
 
 		ctxReuse.szMaxPathLength = szMaxPathLength;
 		ctxReuse.szMaxHeaderLength = szMaxHeaderLength;
 		ctxReuse.szMaxContentLength = szMaxContentLength;
-		ctxReuse.szMaxRequestLength = szMaxRequestLength;
 	}
 
 	//--------------------------------------------------------------------------//
@@ -919,12 +1032,23 @@ public:
 			++szConsumedLength;
 		}
 
+		//特殊外层状态机（内层不处理）
+		switch(contextState.enParseState)
+		{
+		case StateContext::ParseState::BODY:
+			ParseBody(contextState, strStream, szConsumedLength);
+			break;
+		case StateContext::ParseState::BODY_END:
+			ParseBodyEnd(contextState);
+			break;
+		default:
+			break;
+		}
+
 		//出错或完成
 		//返回退出状态
-		return contextState.enParseState == StateContext::ParseState::COMPLETE;
+		return contextState.enParseState != StateContext::ParseState::ERROR;
 	}
-
-
 };
 
 class HttpResponse
