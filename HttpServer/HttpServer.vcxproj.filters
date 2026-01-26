@@ -25,26 +25,56 @@
     <Filter Include="源文件\Platform\Windows">
       <UniqueIdentifier>{2dfcc8dd-405b-4381-9dbd-851c97a8a7f9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件\Common">
-      <UniqueIdentifier>{97fb56e0-8694-49e6-8540-6c8997e30ae7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="头文件\Common\Helper">
-      <UniqueIdentifier>{23b6cb88-c4b1-49b2-80c3-11b9db686ec2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="资源文件\docs">
       <UniqueIdentifier>{f7b78161-766e-4a21-a3e1-71522ae81ff7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="头文件\Virtual">
-      <UniqueIdentifier>{d2f6d28a-e015-4628-9473-47ee4395c393}</UniqueIdentifier>
     </Filter>
     <Filter Include="头文件\Core">
       <UniqueIdentifier>{02aea0af-7c60-4118-a5af-492f34cbafcb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件\Http">
-      <UniqueIdentifier>{6bf4b0b8-f466-423c-9de2-ccc55013c920}</UniqueIdentifier>
-    </Filter>
     <Filter Include="头文件\Utils">
       <UniqueIdentifier>{1378648f-7560-4c88-ac62-b061ae361964}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Network">
+      <UniqueIdentifier>{1edef81b-ec79-4828-afd7-dcea2cb31cbc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Network\Platform">
+      <UniqueIdentifier>{263904c0-1cd7-438f-99ec-188aae6073b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Network\Platform\Windows">
+      <UniqueIdentifier>{be1ad55a-71b6-44e4-adcc-5fcbae8a55dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Application">
+      <UniqueIdentifier>{2e55536b-dd8e-42ac-8eac-66bf989a6d85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Router">
+      <UniqueIdentifier>{8dd6388f-68b8-4cbc-9246-baf4f949d037}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Utils\Helper">
+      <UniqueIdentifier>{23b6cb88-c4b1-49b2-80c3-11b9db686ec2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Network">
+      <UniqueIdentifier>{682c13f1-d247-44f4-be9a-42d0fc2bd220}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Application">
+      <UniqueIdentifier>{ae6cc7b0-6647-4d8a-9afd-f8a8ebd779b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Application\Platform">
+      <UniqueIdentifier>{342a4b5c-4d12-454e-a987-f5885142c729}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Network\Platform">
+      <UniqueIdentifier>{27110df1-3b70-4815-8ccc-ca5ab9da66e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Network\Platform\Windows">
+      <UniqueIdentifier>{64b6d1f4-af06-490b-93a3-1b37b44b6f7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Application\Platform\Windows">
+      <UniqueIdentifier>{b948f936-9813-4652-b6bb-403724420d4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Application\Platform">
+      <UniqueIdentifier>{364226f6-43e1-4ffe-948b-de6ef1e67c30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Application\Platform\Windows">
+      <UniqueIdentifier>{1c07f398-63ee-49c4-9993-280d2e21fd0e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -54,33 +84,27 @@
     <ClCompile Include="Windows_ErrorMessage.cpp">
       <Filter>源文件\Platform\Windows</Filter>
     </ClCompile>
-    <ClCompile Include="Windows_FileSystem.cpp">
-      <Filter>源文件\Platform\Windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Windows_TcpSocket.cpp">
-      <Filter>源文件\Platform\Windows</Filter>
-    </ClCompile>
     <ClCompile Include="Windows_SystemError.cpp">
       <Filter>源文件\Platform\Windows</Filter>
     </ClCompile>
     <ClCompile Include="Windows_ANSI.cpp">
       <Filter>源文件\Platform\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="Windows_TcpSocket.cpp">
+      <Filter>源文件\Network\Platform\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows_FileSystem.cpp">
+      <Filter>源文件\Application\Platform\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPP_Helper.h">
-      <Filter>头文件\Common\Helper</Filter>
+      <Filter>头文件\Utils\Helper</Filter>
     </ClInclude>
     <ClInclude Include="MyAssert.hpp">
-      <Filter>头文件\Common\Helper</Filter>
+      <Filter>头文件\Utils\Helper</Filter>
     </ClInclude>
     <ClInclude Include="Windows_ErrorMessage.h">
-      <Filter>头文件\Platform\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Windows_FileSystem.h">
-      <Filter>头文件\Platform\Windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Windows_TcpSocket.h">
       <Filter>头文件\Platform\Windows</Filter>
     </ClInclude>
     <ClInclude Include="Windows_SystemError.h">
@@ -89,17 +113,29 @@
     <ClInclude Include="Windows_ANSI.h">
       <Filter>头文件\Platform\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="VirtualFileSystem.hpp">
-      <Filter>头文件\Virtual</Filter>
-    </ClInclude>
     <ClInclude Include="HttpServer.hpp">
       <Filter>头文件\Core</Filter>
     </ClInclude>
-    <ClInclude Include="HttpRequest.hpp">
-      <Filter>头文件\Http</Filter>
+    <ClInclude Include="Windows_TcpSocket.h">
+      <Filter>头文件\Network\Platform\Windows</Filter>
     </ClInclude>
     <ClInclude Include="HttpParser.hpp">
-      <Filter>头文件\Http</Filter>
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpRequest.hpp">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="ConnectionManager.hpp">
+      <Filter>头文件\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpResponse.hpp">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualFileSystem.hpp">
+      <Filter>头文件\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Windows_FileSystem.h">
+      <Filter>头文件\Application\Platform\Windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

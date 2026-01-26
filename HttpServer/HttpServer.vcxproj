@@ -169,9 +169,11 @@
     <ClCompile Include="Windows_TcpSocket.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConnectionManager.hpp" />
     <ClInclude Include="CPP_Helper.h" />
     <ClInclude Include="HttpParser.hpp" />
     <ClInclude Include="HttpRequest.hpp" />
+    <ClInclude Include="HttpResponse.hpp" />
     <ClInclude Include="HttpServer.hpp" />
     <ClInclude Include="MyAssert.hpp" />
     <ClInclude Include="VirtualFileSystem.hpp" />
