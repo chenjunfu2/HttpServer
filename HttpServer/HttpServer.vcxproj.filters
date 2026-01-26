@@ -76,6 +76,9 @@
     <Filter Include="头文件\Application\Platform\Windows">
       <UniqueIdentifier>{1c07f398-63ee-49c4-9993-280d2e21fd0e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\Http">
+      <UniqueIdentifier>{6d6b26df-4b25-4fa8-b9e4-496185e99e3a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -119,23 +122,26 @@
     <ClInclude Include="Windows_TcpSocket.h">
       <Filter>头文件\Network\Platform\Windows</Filter>
     </ClInclude>
-    <ClInclude Include="HttpParser.hpp">
-      <Filter>头文件\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="HttpRequest.hpp">
-      <Filter>头文件\Core</Filter>
-    </ClInclude>
     <ClInclude Include="ConnectionManager.hpp">
       <Filter>头文件\Network</Filter>
-    </ClInclude>
-    <ClInclude Include="HttpResponse.hpp">
-      <Filter>头文件\Core</Filter>
     </ClInclude>
     <ClInclude Include="VirtualFileSystem.hpp">
       <Filter>头文件\Application</Filter>
     </ClInclude>
     <ClInclude Include="Windows_FileSystem.h">
       <Filter>头文件\Application\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Router.hpp">
+      <Filter>头文件\Router</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpParser.hpp">
+      <Filter>头文件\Http</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpRequest.hpp">
+      <Filter>头文件\Http</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpResponse.hpp">
+      <Filter>头文件\Http</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
