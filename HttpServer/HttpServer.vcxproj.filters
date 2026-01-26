@@ -34,6 +34,18 @@
     <Filter Include="资源文件\docs">
       <UniqueIdentifier>{f7b78161-766e-4a21-a3e1-71522ae81ff7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\Virtual">
+      <UniqueIdentifier>{d2f6d28a-e015-4628-9473-47ee4395c393}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Core">
+      <UniqueIdentifier>{02aea0af-7c60-4118-a5af-492f34cbafcb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Http">
+      <UniqueIdentifier>{6bf4b0b8-f466-423c-9de2-ccc55013c920}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Utils">
+      <UniqueIdentifier>{1378648f-7560-4c88-ac62-b061ae361964}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -56,12 +68,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HttpServer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="VirtualFileSystem.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="CPP_Helper.h">
       <Filter>头文件\Common\Helper</Filter>
     </ClInclude>
@@ -82,6 +88,18 @@
     </ClInclude>
     <ClInclude Include="Windows_ANSI.h">
       <Filter>头文件\Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualFileSystem.hpp">
+      <Filter>头文件\Virtual</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpServer.hpp">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpRequest.hpp">
+      <Filter>头文件\Http</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpParser.hpp">
+      <Filter>头文件\Http</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

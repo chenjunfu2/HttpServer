@@ -2,7 +2,8 @@
 
 #include "Windows_TcpSocket.h"
 
-#include "HttpServer.hpp"
+#include "HttpParser.hpp"
+#include "HttpRequest.hpp"
 
 #include <stdio.h>
 #include <string>
@@ -70,16 +71,14 @@ int main(void)
 		);
 
 		constexpr const size_t RECV_SIZE = 1024;
-		std::string strRecv;
-		strRecv.resize(RECV_SIZE);
-
-		HttpRequest req;
-		auto ctx = req.GetNewContext(255, 1024, 0);
+		char strRecv[RECV_SIZE];
+		HttpParser parser;
+		parser.SetLimits(254, 1024, 0);
 
 		while (true)
 		{
 			uint32_t u32BufferSize = RECV_SIZE;
-			if (!sockclient.RecvPartial(strRecv.data(), u32BufferSize))
+			if (!sockclient.RecvPartial(strRecv, u32BufferSize))
 			{
 				SocketError e = sockclient.GetSocketError();
 				printf("[sockclient.RecvPartial()] Error [%d]: %s\n", e.GetErrorCode(), e.GetErrorMessage().GetStrView().data());
@@ -94,15 +93,19 @@ int main(void)
 			}
 
 			printf("Recv Data: [\n");
-			MyAssert(fwrite(strRecv.data(), sizeof(*strRecv.data()), u32BufferSize, stdout) == u32BufferSize);
+			MyAssert(fwrite(strRecv, sizeof(strRecv[0]), u32BufferSize, stdout) == u32BufferSize);
 			printf("\n] Recv End\n\n");
 
 			//请求头：收到\r\n\r\n即为结束
 			//限制：1kb，如果没找到结束，请求头过大，直接拒绝
 			//超时：暂时不做，偷懒ing
 
-			size_t szCL{};
-			req.ParsingStream(ctx, strRecv, szCL);
+			size_t szCL = 0;
+			HttpRequest req;
+
+			parser.ResetContext();
+			parser.BindRequest(&req);
+			parser.ParsingStream(strRecv, u32BufferSize, szCL);
 
 			u32BufferSize = sizeof(rsp) - 1;
 			bool bClientClose = false;
