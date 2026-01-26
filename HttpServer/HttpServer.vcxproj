@@ -162,7 +162,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Windows_ANSI.cpp" />
+    <ClCompile Include="Windows_StringConverter.cpp" />
     <ClCompile Include="Windows_SystemError.cpp" />
     <ClCompile Include="Windows_ErrorMessage.cpp" />
     <ClCompile Include="Windows_FileSystem.cpp" />
@@ -178,11 +178,11 @@
     <ClInclude Include="MyAssert.hpp" />
     <ClInclude Include="Router.hpp" />
     <ClInclude Include="VirtualFileSystem.hpp" />
-    <ClInclude Include="Windows_ANSI.h" />
-    <ClInclude Include="Windows_SystemError.h" />
-    <ClInclude Include="Windows_ErrorMessage.h" />
-    <ClInclude Include="Windows_FileSystem.h" />
-    <ClInclude Include="Windows_TcpSocket.h" />
+    <ClInclude Include="StringConverter.h" />
+    <ClInclude Include="SystemError.h" />
+    <ClInclude Include="ErrorMessage.h" />
+    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="TcpSocket.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\docs\rfc7230.txt.pdf" />

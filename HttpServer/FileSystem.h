@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CPP_Helper.h"
-#include "Windows_SystemError.h"
+#include "SystemError.h"
 
 #include <stdint.h>
 #include <stddef.h>

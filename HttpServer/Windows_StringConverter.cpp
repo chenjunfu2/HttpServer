@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Windows_ANSI.h"
+#include "ANSI.h"
 
 #include <Windows.h>
 
