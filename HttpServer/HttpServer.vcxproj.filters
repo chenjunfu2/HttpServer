@@ -119,6 +119,9 @@
     <ClInclude Include="TcpSocket.h">
       <Filter>头文件\Network</Filter>
     </ClInclude>
+    <ClInclude Include="RequestHandler.hpp">
+      <Filter>头文件\Http</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE">

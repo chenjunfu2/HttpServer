@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "ANSI.h"
+#include "StringConverter.h"
 
 #include <Windows.h>
 

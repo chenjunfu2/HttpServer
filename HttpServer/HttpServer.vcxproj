@@ -176,6 +176,7 @@
     <ClInclude Include="HttpResponse.hpp" />
     <ClInclude Include="HttpServer.hpp" />
     <ClInclude Include="MyAssert.hpp" />
+    <ClInclude Include="RequestHandler.hpp" />
     <ClInclude Include="Router.hpp" />
     <ClInclude Include="VirtualFileSystem.hpp" />
     <ClInclude Include="StringConverter.h" />
