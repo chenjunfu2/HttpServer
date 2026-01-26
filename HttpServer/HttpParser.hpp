@@ -65,8 +65,8 @@ protected:
 	{
 		HttpRequest *pCurRequest = NULL;
 
-		State enParseState = State::READY;
-		Error enParseError = Error::NO_ERR;
+		State enState = State::READY;
+		Error enError = Error::NO_ERR;
 
 		size_t szCurHeaderLenght = 0;//当前头部长度
 
@@ -81,8 +81,8 @@ protected:
 private:
 	void SetParseError(Error _enParseError)
 	{
-		stContext.enParseState = State::ERROR;
-		stContext.enParseError = _enParseError;
+		stContext.enState = State::ERROR;
+		stContext.enError = _enParseError;
 	}
 
 	bool SetMethod(const std::string &strMethod) noexcept
@@ -362,7 +362,7 @@ private:
 		//else //(i32Ret == -1)其他字符，走下面处理
 
 		//遇到第一个非空白，迁移状态
-		stContext.enParseState = State::METHOD;
+		stContext.enState = State::METHOD;
 		stContext.szConsecutiveCRLF = 0;//清理CRLF计数器
 		bReuseChar = true;//重用字符
 
@@ -391,7 +391,7 @@ private:
 			stContext.strTempBuffer.clear();
 
 			//转换到下一状态（注意此空白字符被丢弃而非重用，不赋值bReuseChar=true）
-			stContext.enParseState = State::PATH;
+			stContext.enState = State::PATH;
 
 			return true;
 		}
@@ -423,7 +423,7 @@ private:
 			stContext.pCurRequest->stStartLine.strPath = std::move(stContext.strTempBuffer);
 			stContext.strTempBuffer.clear();
 			//丢弃空白，然后迁移到http版本状态
-			stContext.enParseState = State::VERSION;
+			stContext.enState = State::VERSION;
 
 			return true;
 		}
@@ -500,7 +500,7 @@ private:
 
 			//清理，丢弃空白并迁移
 			stContext.strTempBuffer.clear();
-			stContext.enParseState = State::START_LINE_END;
+			stContext.enState = State::START_LINE_END;
 
 			return true;
 		}
@@ -549,7 +549,7 @@ private:
 		//else//(i32Ret == -1)遇到CRLF以外
 
 		//迁移到Key状态
-		stContext.enParseState = State::FIELD_KEY;
+		stContext.enState = State::FIELD_KEY;
 		stContext.szConsecutiveCRLF = 0;//清理CRLF计数器
 		bReuseChar = true;//重用字符
 
@@ -575,7 +575,7 @@ private:
 
 			//字段无误，等待值
 			//直接迁移到下一状态，不清理buffer，不重用字符
-			stContext.enParseState = State::FIELD_KEY_END;
+			stContext.enState = State::FIELD_KEY_END;
 
 			return true;
 		}
@@ -608,7 +608,7 @@ private:
 		}
 
 		//遇到第一个非此类字符，重用字符并迁移到下一状态，由下一状态判断合法性
-		stContext.enParseState = State::FIELD_VAL;
+		stContext.enState = State::FIELD_VAL;
 		--stContext.szCurHeaderLenght;//重用字符撤销一个长度
 		bReuseChar = true;
 
@@ -616,7 +616,7 @@ private:
 	}
 
 	//字段值中可能含有OWS空白，一个或多个，根据标准要求，需要保留，但是需要去掉尾部空白
-	bool ParseFieldVal(char c, bool &bReuseChar) noexcept
+	bool ParseFieldVal(char c, bool &bReuseChar)
 	{
 		if (++stContext.szCurHeaderLenght > stLimits.szMaxHeaderLength)
 		{
@@ -656,7 +656,7 @@ private:
 			stContext.strTempBuffer2.clear();
 
 			//丢弃字符并迁移到下一状态
-			stContext.enParseState = State::FIELD_VAL_END;
+			stContext.enState = State::FIELD_VAL_END;
 
 			return true;
 		}
@@ -697,7 +697,7 @@ private:
 		}
 
 		//遇到其他字符
-		stContext.enParseState = State::FIELD_LINE_END;//处理单行结束
+		stContext.enState = State::FIELD_LINE_END;//处理单行结束
 		--stContext.szCurHeaderLenght;//重用字符撤销一个长度
 		bReuseChar = true;//重用字符
 
@@ -726,7 +726,7 @@ private:
 		{
 			if (++stContext.szConsecutiveCRLF > 1)//多个CRLF，Header已结束，迁移到结束状态
 			{
-				stContext.enParseState = State::HEADER_FIELD_END;
+				stContext.enState = State::HEADER_FIELD_END;
 				stContext.szConsecutiveCRLF = 0;//清理计数器
 				bReuseChar = true;//注意这里的重用字符，并不会真的被用到，仅仅是不要读取下一字符，防止只有头部的情况（当前头部已结束）
 				return true;
@@ -737,7 +737,7 @@ private:
 		//else//(i32Ret == -1)遇到CRLF以外
 
 		//遇到其他字符
-		stContext.enParseState = State::FIELD_KEY;//回到Key处理
+		stContext.enState = State::FIELD_KEY;//回到Key处理
 		stContext.szConsecutiveCRLF = 0;//清理计数器
 		--stContext.szCurHeaderLenght;//重用字符撤销一个长度
 		bReuseChar = true;//重用字符
@@ -785,11 +785,11 @@ private:
 			}
 
 			//不重用字符（获取下一个）
-			stContext.enParseState = State::BODY;
+			stContext.enState = State::BODY;
 			return true;
 		}
 
-		stContext.enParseState = State::COMPLETE;
+		stContext.enState = State::COMPLETE;
 		return true;
 	}
 
@@ -811,7 +811,7 @@ private:
 		//读取字节数足够，切换状态
 		if (stContext.pCurRequest->stHeaderField.szContentLength == stContext.strTempBuffer.size())
 		{
-			stContext.enParseState = State::BODY_END;
+			stContext.enState = State::BODY_END;
 			return;
 		}
 
@@ -825,7 +825,7 @@ private:
 		stContext.strTempBuffer.clear();
 
 		//成功后迁移到状态COMPLETE
-		stContext.enParseState = State::COMPLETE;
+		stContext.enState = State::COMPLETE;
 	}
 
 	//--------------------------------------------------------------------------//
@@ -838,7 +838,7 @@ private:
 		{
 			bReuseChar = false;//每次重置
 
-			switch (stContext.enParseState)
+			switch (stContext.enState)
 			{
 			case State::READY:
 				bRet = ParseReady(c, bReuseChar);
@@ -893,8 +893,8 @@ public:
 		{
 			stContext.pCurRequest = NULL;
 
-			stContext.enParseState = State::READY;
-			stContext.enParseError = Error::NO_ERR;
+			stContext.enState = State::READY;
+			stContext.enError = Error::NO_ERR;
 
 			stContext.szCurHeaderLenght = 0;
 
@@ -941,8 +941,8 @@ public:
 	{
 		stContext.pCurRequest = NULL;
 
-		stContext.enParseState = State::READY;
-		stContext.enParseError = Error::NO_ERR;
+		stContext.enState = State::READY;
+		stContext.enError = Error::NO_ERR;
 
 		stContext.strTempBuffer.clear();
 		stContext.strTempBuffer2.clear();
@@ -962,8 +962,8 @@ public:
 	DEFAULT_MOVE(HttpParser);
 	DELETE_COPY(HttpParser);
 
-	GETTER_COPY(State, stContext.enParseState);
-	GETTER_COPY(Error, stContext.enParseError);
+	GETTER_COPY(State, stContext.enState);
+	GETTER_COPY(Error, stContext.enError);
 
 	GETTER_COPY(MaxPathLength, stLimits.szMaxPathLength);
 	GETTER_COPY(MaxHeaderLength, stLimits.szMaxHeaderLength);
@@ -994,7 +994,7 @@ public:
 		szConsumedLength += end - p;
 
 		//特殊外层状态机（内层不处理）
-		switch (stContext.enParseState)
+		switch (stContext.enState)
 		{
 		case State::BODY:
 			ParseBody(pStream, szStreamLength, szConsumedLength);
@@ -1008,7 +1008,12 @@ public:
 
 		//出错或完成
 		//返回退出状态
-		return stContext.enParseState != State::ERROR;
+		return stContext.enState != State::ERROR;
+	}
+
+	bool IsComplete(void) const noexcept
+	{
+		return stContext.enState == State::COMPLETE;
 	}
 
 	//--------------------------------------------------------------------------//

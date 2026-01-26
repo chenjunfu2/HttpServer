@@ -10,7 +10,7 @@ class HttpRequest
 {
 	friend class HttpParser;
 public:
-	enum class Method
+	enum class Method : uint64_t
 	{
 		UNKNOWN = 0,	//未知请求
 		GET,			//获取数据，包括响应头和响应体
@@ -22,13 +22,14 @@ public:
 		OPTIONS,
 		TRACE,
 		PATCH,
+		ENUM_END,
 	};
 
 	static inline constexpr size_t MIN_METHOD_LENGTH = 3;
 	static inline constexpr size_t MAX_METHOD_LENGTH = 7;
 	static inline constexpr size_t VERSION_LENGTH = sizeof("HTTP/x.x") - 1;
 
-	enum class ConnectionType
+	enum class ConnectionType : uint64_t
 	{
 		UNKNOWN = 0,
 		KEEP_ALIVE,
@@ -40,8 +41,8 @@ public:
 	{
 		Method enMethod = Method::UNKNOWN;//请求方法
 		std::string strPath{};//请求路径
-		uint8_t u8MajorVersion;//主版本号
-		uint8_t u8MinorVersion;//次版本号
+		uint8_t u8MajorVersion{};//主版本号
+		uint8_t u8MinorVersion{};//次版本号
 	};
 
 	struct HeaderField

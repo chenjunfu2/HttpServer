@@ -121,7 +121,7 @@ public:
 
 		DELETE_COPY(MemoryView);
 		
-		MemoryView(MemoryView &&_Move):
+		MemoryView(MemoryView &&_Move) noexcept:
 			pViewData(_Move.pViewData),
 			i64ViewSize(_Move.i64ViewSize)
 		{
@@ -129,7 +129,7 @@ public:
 			_Move.i64ViewSize = 0;
 		}
 
-		MemoryView &operator=(MemoryView &&_Move)
+		MemoryView &operator=(MemoryView &&_Move) noexcept
 		{
 			Clear();
 
