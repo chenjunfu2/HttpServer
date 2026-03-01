@@ -13,6 +13,7 @@ class RadixTree
 public:
 	enum class NodeType : uint64_t
 	{
+		ERROR,			//错误节点（用于判断状态）
 		NONE,			//非匹配节点（上一节点匹配成功）
 		STATIC,			//折叠的静态节点（强匹配）
 		PARAM,			//参数节点（:param）
@@ -45,7 +46,7 @@ public:
 		如果是单段、多段节点，那么为空
 		*/
 
-		std::string strSegment;
+		std::string strSegment{};
 
 		/*
 		所有节点都需要判断vData是否为SubNode类型
@@ -63,19 +64,59 @@ public:
 		匹配则节点为NONE并存储ValType，否则匹配方法并返回
 		方法对应ValType）
 		*/
-		std::variant<SubNode, ValType> vData;
+		std::variant<SubNode, ValType> vData{};
 	};
+
+
+private:
+
+	struct PathSeg
+	{
+		std::string strSeg{};
+		NodeType enSegType = NodeType::ERROR;
+	};
+
+	using PathSegList = std::vector<PathSeg>;
+
 
 private:
 	Node stRoot{};
 
 private:
+	//需要处理转义
+	//PathSeg ParseTypeAndEscape(const std::string &strFullPath, size_t &szSegPos)
+	//{
+	//	size_t szFullSize = strFullPath.size();
+	//	size_t szPathSepPos = strFullPath.find('/', szSegPos);
+	//
+	//	if (szPathSepPos == strFullPath.npos)
+	//	{
+	//		auto *pBeg = strFullPath.data() + szSegPos;
+	//		size_t szCount = szFullSize - szSegPos;
+	//
+	//		return PathSeg
+	//		{
+	//			.strSeg = { pBeg, szCount  },
+	//			.enSegType = GetSegmentStrType(pBeg, pBeg + szCount),
+	//		};
+	//	}
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//
+	//}
+
+
 	//借用NodeType类型实现，解释方式类似但不完全相同
 	NodeType GetSegmentStrType(const char *pBeg, const char *pEnd)
 	{
 		if (pBeg == pEnd)
 		{
-			return NodeType::NONE;//出错
+			return NodeType::ERROR;//出错
 		}
 
 		//遍历字符串，查看是否为参数或单段、多段匹配
@@ -120,7 +161,7 @@ public:
 	/*
 	转义字符（仅在开头出现时需要）
 	\\ = \
-	\ * = *
+	\* = *
 	\: = :
 	*/
 	bool RegisterPath(const std::string &strPath, ValType tVal)
