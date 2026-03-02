@@ -13,13 +13,14 @@ class RadixTree
 public:
 	enum class NodeType : uint64_t
 	{
-		ERROR,			//错误节点（用于判断状态）
 		NONE,			//非匹配节点（上一节点匹配成功）
 		STATIC,			//折叠的静态节点（强匹配）
 		PARAM,			//参数节点（:param）
 		WILD_SINGLE,	//单段通配符（*）
 		WILD_MULTI,		//多段通配符（**）
 	};
+
+	using PathSegList = std::vector<std::string>;
 
 	struct Node;
 
@@ -31,6 +32,7 @@ public:
 		std::unique_ptr<Node> pWildSingle = {};
 		std::unique_ptr<Node> pWildMulti = {};
 	};
+
 
 	struct Node
 	{
@@ -46,7 +48,7 @@ public:
 		如果是单段、多段节点，那么为空
 		*/
 
-		std::string strSegment{};
+		PathSegList listPathSeg{};
 
 		/*
 		所有节点都需要判断vData是否为SubNode类型
@@ -67,60 +69,65 @@ public:
 		std::variant<SubNode, ValType> vData{};
 	};
 
-
-private:
-
-	struct PathSeg
-	{
-		std::string strSeg{};
-		NodeType enSegType = NodeType::ERROR;
-	};
-
-	using PathSegList = std::vector<PathSeg>;
-
-
 private:
 	Node stRoot{};
 
 private:
-	//需要处理转义
-	//PathSeg ParseTypeAndEscape(const std::string &strFullPath, size_t &szSegPos)
-	//{
-	//	size_t szFullSize = strFullPath.size();
-	//	size_t szPathSepPos = strFullPath.find('/', szSegPos);
-	//
-	//	if (szPathSepPos == strFullPath.npos)
-	//	{
-	//		auto *pBeg = strFullPath.data() + szSegPos;
-	//		size_t szCount = szFullSize - szSegPos;
-	//
-	//		return PathSeg
-	//		{
-	//			.strSeg = { pBeg, szCount  },
-	//			.enSegType = GetSegmentStrType(pBeg, pBeg + szCount),
-	//		};
-	//	}
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//}
-
-
-	//借用NodeType类型实现，解释方式类似但不完全相同
-	NodeType GetSegmentStrType(const char *pBeg, const char *pEnd)
+	bool EscapeRequestSeg(std::string& strEscape)
 	{
-		if (pBeg == pEnd)
+
+
+
+
+
+	}
+
+	bool EscapeRegisterSeg(std::string& strEscape)
+	{
+
+
+
+
+
+	}
+
+
+
+	void CutRequestPath(const std::string &strFullPath, size_t &szCurSegPos, std::string& strSegment)
+	{
+		size_t szFullSize = strFullPath.size();
+		size_t szNextSegPos = strFullPath.find('/', szCurSegPos);
+	
+		if (szNextSegPos == strFullPath.npos)
 		{
-			return NodeType::ERROR;//出错
+			szNextSegPos = szFullSize - szCurSegPos;//设置为结尾
+		}
+		
+		//裁切路径部分
+		strSegment = { &strFullPath[szCurSegPos], szNextSegPos - szCurSegPos };//szNextSegPos是/的位置，用它来当作size计算的上限不会包含尾部的/
+		szCurSegPos = szNextSegPos + 1;//跳过下一个/
+	}
+
+	bool CutRegisterPath(const std::string &strFullPath, size_t &szSegPos, std::string &strSegment)
+	{
+		//这里需要处理转义，因为注册中的\/不能当作/
+
+
+
+	}
+
+
+	//获取注册路径片段的类型
+	NodeType GetRegisterSegType(const std::string &strSegment)
+	{
+		if (strSegment.empty())
+		{
+			return NodeType::STATIC;//根结点或空节点
 		}
 
 		//遍历字符串，查看是否为参数或单段、多段匹配
-		const char *pCur = pBeg;
+		const char *pCur = strSegment.data();
+		const char *pEnd = pCur + strSegment.size();
 		if (*pCur == ':')//参数
 		{
 			if (++pCur == pEnd)//参数名呢？
@@ -143,7 +150,7 @@ private:
 			}
 
 			//还有东西
-			return NodeType::NONE;
+			return NodeType::NONE;//未知
 		}
 		else//其它字符，静态段
 		{
@@ -159,69 +166,22 @@ public:
 
 public:
 	/*
-	转义字符（仅在开头出现时需要）
+	注册时的转义字符
 	\\ = \
 	\* = *
 	\: = :
+	\/ = /
 	*/
 	bool RegisterPath(const std::string &strPath, ValType tVal)
 	{
-		if (strPath.empty() || strPath[0] != '/')
-		{
-			return false;
-		}
-
-		//查找下一个'/'
-		size_t szSegNext = strPath.find_first_of('/', 1);
-		if (szSegNext == strPath.npos)//当前是完整路径
-		{
-			szSegNext = strPath.size();
-		}
-
-		//得到类型
-		auto curType = GetSegmentStrType(strPath.data(), strPath.data() + szSegNext);
-
-
-		//可能的\开头则丢弃
-		size_t szSegBeg = 0;
-		if (strPath.size() == 1)
-		{
-			szSegBeg = 0;
-		}
-		else
-		{
-			szSegBeg = strPath[1] == '\\'
-				? 2
-				: 1;
-		}
-		 
-		switch (curType)
-		{
-		case NodeType::STATIC:
-			break;
-		case NodeType::PARAM:
-			break;
-		case NodeType::WILD_SINGLE:
-			break;
-		case NodeType::WILD_MULTI:
-			break;
-		case NodeType::NONE:
-		default:
-			return false;
-			break;
-		}
-
-
-
-
-
-
-
-
+		
 	}
 
 
+	ValType *ParseRequestPath(const std::string &strPath)
+	{
 
+	}
 
 
 
